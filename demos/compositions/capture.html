@@ -1,0 +1,233 @@
+<!--
+  Demo: add a transaction.
+  Transactions page → Add transaction → type "Coffee", pick Food, type 3.40,
+  charge it to the Groceries budget → the row lands at the top of the table.
+-->
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .cap-table .k-row {
+      grid-template-columns: 0.62fr 1.7fr 1fr 0.9fr 0.9fr;
+    }
+    .cap-body {
+      position: relative;
+      height: 476px;
+      overflow: hidden;
+    }
+    .cap-new {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 0;
+    }
+    .cap-new > span {
+      position: relative;
+    }
+    .cap-modal {
+      width: 740px;
+      margin-left: -370px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="capture" data-width="1600" data-height="1000">
+    <div id="cap-screen" class="clip k-screen" data-start="0" data-duration="11.6" data-track-index="1">
+      <div id="cap-cam" class="k-cam">
+        <div class="k-app">
+          <div class="k-nav">
+            <div class="k-wrap k-nav-in">
+              <div class="k-logo"><i></i>Budgetly</div>
+              <div class="k-links"><span>Dashboard</span><span class="is-active">Transactions</span><span>Budgets</span></div>
+              <div class="k-nav-end">
+                <div class="k-bell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+                </div>
+                <div class="k-avatar">MT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="k-page k-wrap">
+            <div class="k-head">
+              <div class="k-h1">Transactions</div>
+              <div class="k-actions"><div class="k-btn k-btn-ghost"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12" /></svg>Import CSV</div><div class="k-btn k-btn-primary" id="cap-add">Add transaction</div></div>
+            </div>
+            <div class="k-table cap-table">
+              <div class="k-row k-row-head k-label"><span>Date</span><span>Description</span><span>Category</span><span>From</span><span class="k-end">Amount</span></div>
+              <div class="cap-body">
+                <div id="cap-rows">
+                  <div class="k-row" style="border-top: 0"><span class="k-mono">11 MAR</span><span class="k-strong">Supermarket shop</span><span class="k-cat"><i></i>Food</span><span class="k-muted">Groceries</span><span class="k-end">-£85.00</span></div>
+                  <div class="k-row"><span class="k-mono">10 MAR</span><span class="k-strong">Freelance payment</span><span class="k-cat"><i></i>Income</span><span class="k-muted">Account</span><span class="k-end k-pos">+£600.00</span></div>
+                  <div class="k-row"><span class="k-mono">08 MAR</span><span class="k-strong">Monthly bus pass</span><span class="k-cat"><i></i>Transport</span><span class="k-muted">Transport</span><span class="k-end">-£180.00</span></div>
+                  <div class="k-row"><span class="k-mono">07 MAR</span><span class="k-strong">Netflix</span><span class="k-cat"><i></i>Entertainment</span><span class="k-muted">Account</span><span class="k-end">-£15.00</span></div>
+                  <div class="k-row"><span class="k-mono">06 MAR</span><span class="k-strong">Dinner out</span><span class="k-cat"><i></i>Food</span><span class="k-muted">Account</span><span class="k-end">-£45.00</span></div>
+                  <div class="k-row"><span class="k-mono">04 MAR</span><span class="k-strong">Electricity</span><span class="k-cat"><i></i>Bills</span><span class="k-muted">Account</span><span class="k-end">-£62.40</span></div>
+                  <div class="k-row"><span class="k-mono">01 MAR</span><span class="k-strong">Salary</span><span class="k-cat"><i></i>Income</span><span class="k-muted">Account</span><span class="k-end k-pos">+£2,400.00</span></div>
+                </div>
+                <div class="k-row cap-new" id="cap-new">
+                  <div id="cap-new-wash" class="k-wash"></div>
+                  <span class="k-mono">12 MAR</span><span class="k-strong">Coffee</span><span class="k-cat"><i></i>Food</span><span class="k-muted">Groceries</span><span class="k-end">-£3.40</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="k-scrim" id="cap-scrim" data-layout-allow-occlusion></div>
+        <div class="k-modal cap-modal" id="cap-modal" style="top: 196px" data-layout-allow-occlusion>
+          <div>
+            <div class="k-modal-title">Add transaction</div>
+            <div class="k-modal-sub">Today, 12 March</div>
+          </div>
+          <div class="k-field">
+            Description
+            <div class="k-input" id="cap-f-desc"><div class="k-ring" id="cap-ring-desc"></div><span id="cap-desc"></span><span class="k-caret" id="cap-caret-desc"></span></div>
+          </div>
+          <div class="k-fields">
+            <div class="k-field">
+              Category
+              <div class="k-input" id="cap-f-cat"><div class="k-ring" id="cap-ring-cat"></div><span style="position: relative"><span id="cap-cat-ph" class="k-muted" style="font-weight: 400">Choose…</span><span id="cap-cat" style="position: absolute; left: 0; top: 0; white-space: nowrap">Food</span></span><svg class="k-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></div>
+            </div>
+            <div class="k-field">
+              Amount
+              <div class="k-input" id="cap-f-amt"><div class="k-ring" id="cap-ring-amt"></div><span class="k-prefix">£</span><span id="cap-amt"></span><span class="k-caret" id="cap-caret-amt"></span></div>
+            </div>
+          </div>
+          <div class="k-fields">
+            <div class="k-field">
+              From
+              <div class="k-input" id="cap-f-from"><div class="k-ring" id="cap-ring-from"></div><span id="cap-from">Account</span><svg class="k-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></div>
+            </div>
+            <div class="k-field">
+              Type
+              <div class="k-input"><span>Expense</span><svg class="k-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></div>
+            </div>
+          </div>
+          <div class="k-modal-foot">
+            <div class="k-btn k-btn-ghost">Cancel</div>
+            <div class="k-btn k-btn-primary" id="cap-save">Save transaction</div>
+          </div>
+        </div>
+
+        <div class="k-menu" id="cap-menu-cat" style="transform-origin: 0 0" data-layout-allow-occlusion>
+          <div class="k-menu-item" id="cap-opt-food"><div id="cap-hover-food" class="k-hover"></div><span>Food</span></div>
+          <div class="k-menu-item"><span>Transport</span></div>
+          <div class="k-menu-item"><span>Entertainment</span></div>
+          <div class="k-menu-item"><span class="k-muted">Create "Coffee"</span></div>
+        </div>
+        <div class="k-menu" id="cap-menu-from" style="transform-origin: 0 0" data-layout-allow-occlusion>
+          <div class="k-menu-item"><span>Account</span></div>
+          <div class="k-menu-item" id="cap-opt-groc"><div id="cap-hover-groc" class="k-hover"></div><span>Groceries</span><span class="k-mono k-muted" style="font-size: 16px">£285 LEFT</span></div>
+          <div class="k-menu-item"><span>Transport</span><span class="k-mono k-muted" style="font-size: 16px">£48 LEFT</span></div>
+        </div>
+
+        <div class="k-cursor" id="cap-cursor">
+          <svg viewBox="0 0 44 44"><path d="M9 6l24 15.5-10.8 2.3L16.4 34z" fill="#0c1a14" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var K = window.Kit;
+      var DUR = 11.6;
+
+      function build() {
+        var cam = document.getElementById("cap-cam");
+        var cursor = "#cap-cursor";
+        function under(menuId, fieldId) {
+          var b = K.box(fieldId, cam);
+          var m = document.getElementById(menuId);
+          m.style.left = b.x + "px";
+          m.style.top = b.y + b.h + 8 + "px";
+          m.style.width = b.w + "px";
+        }
+        under("cap-menu-cat", "#cap-f-cat");
+        under("cap-menu-from", "#cap-f-from");
+
+        var add = K.point("#cap-add", cam, 0.5, 0.55);
+        var modal = K.point("#cap-modal", cam);
+        var fCat = K.point("#cap-f-cat", cam, 0.6, 0.55);
+        var optFood = K.point("#cap-opt-food", cam, 0.35, 0.55);
+        var fAmt = K.point("#cap-f-amt", cam, 0.55, 0.55);
+        var fFrom = K.point("#cap-f-from", cam, 0.6, 0.55);
+        var optGroc = K.point("#cap-opt-groc", cam, 0.35, 0.55);
+        var save = K.point("#cap-save", cam, 0.5, 0.55);
+
+        var tl = gsap.timeline({ paused: true });
+        K.open(tl, cam);
+        K.hidden(["#cap-cat", "#cap-scrim", "#cap-modal", "#cap-menu-cat", "#cap-menu-from", "#cap-hover-food", "#cap-hover-groc", "#cap-ring-desc", "#cap-ring-cat", "#cap-ring-amt", "#cap-ring-from", "#cap-caret-desc", "#cap-caret-amt", "#cap-new", "#cap-new-wash"]);
+        K.cursorSet(cursor, { x: 1080, y: 760 });
+
+        // 1. Open the form
+        K.cursorTo(tl, cursor, add, 0.5, 0.75);
+        K.press(tl, cursor, "#cap-add", 1.32);
+        K.fade(tl, "#cap-scrim", 0, 1, 1.46, 0.3);
+        K.show(tl, "#cap-modal", 1.5, { dur: 0.4 });
+        K.camTo(tl, cam, modal, 1.12, 1.5, 1.0);
+
+        // 2. Description
+        K.focus(tl, "#cap-ring-desc", 1.85);
+        K.caret(tl, "#cap-caret-desc", 1.9, 3.7);
+        K.type(tl, "#cap-desc", "Coffee", 2.25, { cps: 8.5 });
+
+        // 3. Category
+        K.cursorTo(tl, cursor, fCat, 3.05, 0.55);
+        K.press(tl, cursor, null, 3.66);
+        K.blur(tl, "#cap-ring-desc", 3.7);
+        K.focus(tl, "#cap-ring-cat", 3.7);
+        K.show(tl, "#cap-menu-cat", 3.76, { scale: 0.96, y: -6, dur: 0.26 });
+        K.cursorTo(tl, cursor, optFood, 4.05, 0.32);
+        K.fade(tl, "#cap-hover-food", 0, 1, 4.2, 0.12);
+        K.press(tl, cursor, null, 4.5);
+        K.hide(tl, "#cap-menu-cat", 4.6, { y: -4 });
+        tl.to("#cap-cat-ph", { opacity: 0, duration: 0.08 }, 4.6);
+        tl.fromTo("#cap-cat", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 4.6);
+
+        // 4. Amount
+        K.cursorTo(tl, cursor, fAmt, 4.78, 0.45);
+        K.press(tl, cursor, null, 5.26);
+        K.blur(tl, "#cap-ring-cat", 5.3);
+        K.focus(tl, "#cap-ring-amt", 5.3);
+        K.caret(tl, "#cap-caret-amt", 5.35, 6.85);
+        K.type(tl, "#cap-amt", "3.40", 5.6, { cps: 6.5 });
+
+        // 5. Which budget pays
+        K.cursorTo(tl, cursor, fFrom, 6.4, 0.45);
+        K.press(tl, cursor, null, 6.88);
+        K.blur(tl, "#cap-ring-amt", 6.92);
+        K.focus(tl, "#cap-ring-from", 6.92);
+        K.show(tl, "#cap-menu-from", 6.98, { scale: 0.96, y: -6, dur: 0.26 });
+        K.cursorTo(tl, cursor, optGroc, 7.26, 0.3);
+        K.fade(tl, "#cap-hover-groc", 0, 1, 7.4, 0.12);
+        K.press(tl, cursor, null, 7.68);
+        K.hide(tl, "#cap-menu-from", 7.78, { y: -4 });
+        K.swapText(tl, "#cap-from", "Account", "Groceries", 7.78);
+        K.blur(tl, "#cap-ring-from", 7.9);
+
+        // 6. Save: the row lands at the top
+        K.cursorTo(tl, cursor, save, 7.95, 0.5);
+        K.press(tl, cursor, "#cap-save", 8.5);
+        K.hide(tl, "#cap-modal", 8.62);
+        tl.to("#cap-scrim", { opacity: 0, duration: 0.3, ease: "power2.out" }, 8.62);
+        K.camReset(tl, cam, 8.64, 0.9);
+        tl.fromTo("#cap-rows", { y: 0 }, { y: 68, duration: 0.6, ease: "expo.out" }, 9.05);
+        tl.fromTo("#cap-new", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 9.12);
+        tl.fromTo("#cap-new-wash", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 9.12);
+        tl.to("#cap-new-wash", { opacity: 0, duration: 1.5, ease: "power2.inOut" }, 9.7);
+        K.cursorTo(tl, cursor, { x: 1120, y: 640 }, 8.9, 1.0);
+
+        K.close(tl, cam, DUR);
+        tl.set({}, {}, DUR);
+        window.__timelines["capture"] = tl;
+      }
+
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+      else build();
+    })();
+  </script>
+</template>

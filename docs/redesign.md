@@ -17,6 +17,52 @@ Phase 1 is the landing page. Phase 2 is the inside of the app.
 The demos show the app as it should look after phase 2. Use them as the
 reference for the app redesign: same tokens, same components, same motion.
 
+## Landing page
+
+- `app/(marketing)/page.tsx` composes the sections in `components/landing/`.
+- Scroll animation is GSAP + ScrollTrigger (`lib/gsap.ts`). Nothing is pinned
+  or scroll-jacked: the hero background and the demo stage use CSS
+  `position: sticky`, and ScrollTrigger only reads scroll progress.
+- The hero line-work is one WebGL fragment shader
+  (`components/landing/GuillocheCanvas.tsx`), with no 3D library.
+- Everything animated checks `prefers-reduced-motion`. With it on, the page
+  shows the finished state of each section and still frames of the demos.
+
+## Product demos
+
+Five looping demos, built with HyperFrames, each showing a real feature:
+dashboard range switch, add a transaction, import a CSV, fund a budget, set a
+spending limit.
+
+- Source: `demos/` is one HyperFrames project. `demos/index.html` is the root
+  timeline; each demo is a scene in `demos/compositions/`. Shared UI styles
+  and timeline helpers (cursor, typing, counting, camera) are in
+  `demos/assets/kit.css` and `demos/assets/kit.js`. The kit reads the same
+  `styles/tokens.css` as the app (linked as `demos/assets/tokens.css`).
+- Currency in demos is set once, in `Kit.CURRENCY` (`demos/assets/kit.js`).
+- Delivery: embedded live with `@hyperframes/player`
+  (`components/landing/DemoPlayer.tsx`), not as video. The player and its
+  runtime load only when a demo nears the viewport, play only while visible,
+  and are self-hosted (`public/demos/vendor/`), so the page makes no
+  third-party requests. One player serves all four feature chapters by moving
+  between scenes.
+
+Workflow after editing a demo:
+
+```bash
+npm run demos:preview   # HyperFrames Studio, to edit and scrub
+npm run demos:check     # lint + runtime + layout checks
+npm run demos:sync      # copy to public/demos and refresh lib/demos.manifest.json
+npm run demos:posters   # re-render the still frames (needs ffmpeg)
+```
+
+`demos:check` reports text-overlap findings where menus and modals cover the
+page behind them, and film-oriented advice (minimum type size, no soundtrack).
+Those are expected for UI demos.
+
+The vendored runtime in `public/demos/vendor/` must match the
+`@hyperframes/player` version in `package.json` (0.9.40).
+
 ## Phase 2 notes
 
 ### Currency: switch the app from $ to £ (display only)

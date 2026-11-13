@@ -1,0 +1,336 @@
+<!--
+  Demo: import a bank statement.
+  Transactions page → Import CSV → drop a file → match columns → review →
+  import → the table fills.
+-->
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .imp-table .k-row {
+      grid-template-columns: 0.62fr 1.7fr 1fr 0.9fr 0.9fr;
+    }
+    .imp-body {
+      position: relative;
+      height: 476px;
+      overflow: hidden;
+    }
+    .imp-new {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 0;
+    }
+    .imp-new > span {
+      position: relative;
+    }
+    .imp-modal {
+      width: 780px;
+      margin-left: -390px;
+    }
+    .imp-steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .imp-step {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      font-size: 17px;
+      font-weight: 500;
+      color: var(--bl-fg-muted);
+    }
+    .imp-step i {
+      display: block;
+      height: 5px;
+      border-radius: 3px;
+      background: var(--bl-bg-sunk);
+      position: relative;
+      overflow: hidden;
+    }
+    .imp-step i b {
+      position: absolute;
+      inset: 0;
+      background: var(--bl-accent);
+      transform-origin: 0 50%;
+    }
+    .imp-panes {
+      position: relative;
+      height: 268px;
+    }
+    .imp-pane {
+      position: absolute;
+      inset: 0;
+    }
+    .imp-drop {
+      position: absolute;
+      inset: 0;
+      border: 2.5px dashed var(--bl-border-strong);
+      border-radius: var(--k-r-lg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      font-size: 22px;
+      font-weight: 500;
+    }
+    .imp-drop svg {
+      width: 40px;
+      height: 40px;
+      color: var(--bl-fg-faint);
+    }
+    .imp-drop-on {
+      position: absolute;
+      inset: -2.5px;
+      border: 2.5px solid var(--bl-accent);
+      border-radius: inherit;
+      background: var(--bl-accent-soft);
+    }
+    .imp-file {
+      position: absolute;
+      left: 0;
+      top: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      height: 56px;
+      padding: 0 20px 0 16px;
+      border-radius: var(--k-r-md);
+      background: var(--bl-surface);
+      border: 1.5px solid var(--bl-border-strong);
+      box-shadow: var(--bl-shadow-md);
+      font-size: 20px;
+      font-weight: 500;
+      white-space: nowrap;
+      z-index: 40;
+    }
+    .imp-file i {
+      font-family: var(--bl-font-mono);
+      font-style: normal;
+      font-size: 13px;
+      letter-spacing: 0.06em;
+      padding: 4px 7px;
+      border-radius: 5px;
+      background: var(--bl-accent-soft);
+      color: var(--bl-accent-fg);
+    }
+    .imp-map {
+      display: grid;
+      grid-template-columns: 1fr 44px 1fr 40px;
+      align-items: center;
+      height: 76px;
+      padding: 0 22px;
+      border: 1.5px solid var(--bl-border);
+      border-radius: var(--k-r-md);
+      font-size: 21px;
+      margin-bottom: 14px;
+    }
+    .imp-map .k-mono {
+      font-family: var(--bl-font-mono);
+      font-size: 18px;
+      color: var(--bl-fg-muted);
+    }
+    .imp-map svg {
+      width: 26px;
+      height: 26px;
+      color: var(--bl-accent-fg);
+    }
+    .imp-review {
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+      padding-top: 6px;
+      font-size: 21px;
+    }
+    .imp-foot {
+      font-size: 17px;
+      color: var(--bl-fg-muted);
+      font-family: var(--bl-font-mono);
+      letter-spacing: 0.02em;
+      padding: 0 4px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="import" data-width="1600" data-height="1000">
+    <div id="imp-screen" class="clip k-screen" data-start="0" data-duration="11.8" data-track-index="1">
+      <div id="imp-cam" class="k-cam">
+        <div class="k-app">
+          <div class="k-nav">
+            <div class="k-wrap k-nav-in">
+              <div class="k-logo"><i></i>Budgetly</div>
+              <div class="k-links"><span>Dashboard</span><span class="is-active">Transactions</span><span>Budgets</span></div>
+              <div class="k-nav-end">
+                <div class="k-bell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+                </div>
+                <div class="k-avatar">MT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="k-page k-wrap" style="gap: 24px">
+            <div class="k-head">
+              <div class="k-h1">Transactions</div>
+              <div class="k-actions"><div class="k-btn k-btn-ghost" id="imp-open"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12" /></svg>Import CSV</div><div class="k-btn k-btn-primary">Add transaction</div></div>
+            </div>
+            <div class="k-table imp-table">
+              <div class="k-row k-row-head k-label"><span>Date</span><span>Description</span><span>Category</span><span>From</span><span class="k-end">Amount</span></div>
+              <div class="imp-body">
+                <div id="imp-rows">
+                  <div class="k-row" style="border-top: 0"><span class="k-mono">11 MAR</span><span class="k-strong">Supermarket shop</span><span class="k-cat"><i></i>Food</span><span class="k-muted">Groceries</span><span class="k-end">-£85.00</span></div>
+                  <div class="k-row"><span class="k-mono">10 MAR</span><span class="k-strong">Freelance payment</span><span class="k-cat"><i></i>Income</span><span class="k-muted">Account</span><span class="k-end k-pos">+£600.00</span></div>
+                  <div class="k-row"><span class="k-mono">08 MAR</span><span class="k-strong">Monthly bus pass</span><span class="k-cat"><i></i>Transport</span><span class="k-muted">Transport</span><span class="k-end">-£180.00</span></div>
+                </div>
+                <div class="k-row imp-new" id="imp-new-0" style="top: 0px; border-top: 0"><span class="k-mono">31 MAR</span><span class="k-strong">Coffee shop</span><span class="k-cat"><i></i>Food</span><span class="k-muted">Account</span><span class="k-end">-£4.20</span></div>
+                <div class="k-row imp-new" id="imp-new-1" style="top: 68px; border-top: 1.5px solid var(--bl-border)"><span class="k-mono">30 MAR</span><span class="k-strong">Train ticket</span><span class="k-cat"><i></i>Transport</span><span class="k-muted">Account</span><span class="k-end">-£23.60</span></div>
+                <div class="k-row imp-new" id="imp-new-2" style="top: 136px; border-top: 1.5px solid var(--bl-border)"><span class="k-mono">29 MAR</span><span class="k-strong">Bookshop</span><span class="k-cat"><i></i>Shopping</span><span class="k-muted">Account</span><span class="k-end">-£18.99</span></div>
+                <div class="k-row imp-new" id="imp-new-3" style="top: 204px; border-top: 1.5px solid var(--bl-border)"><span class="k-mono">28 MAR</span><span class="k-strong">Refund</span><span class="k-cat"><i></i>Income</span><span class="k-muted">Account</span><span class="k-end k-pos">+£32.00</span></div>
+              </div>
+            </div>
+            <div class="imp-foot"><span id="imp-count">SHOWING 1–3 OF 3 TRANSACTIONS</span></div>
+          </div>
+        </div>
+
+        <div class="k-scrim" id="imp-scrim" data-layout-allow-occlusion></div>
+        <div class="k-modal imp-modal" id="imp-modal" style="top: 170px" data-layout-allow-occlusion>
+          <div>
+            <div class="k-modal-title">Import transactions</div>
+            <div class="k-modal-sub" id="imp-sub">Upload a CSV file from your bank.</div>
+          </div>
+          <div class="imp-steps">
+            <div class="imp-step"><i><b></b></i>Upload</div>
+            <div class="imp-step"><i><b id="imp-s2"></b></i>Match columns</div>
+            <div class="imp-step"><i><b id="imp-s3"></b></i>Review</div>
+          </div>
+          <div class="imp-panes">
+            <div class="imp-pane" id="imp-p1">
+              <div class="imp-drop" id="imp-drop">
+                <div class="imp-drop-on" id="imp-drop-on"></div>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2M16 8l-4-4-4 4M12 4v12" /></svg>
+                <span style="position: relative">Drop your bank export here</span>
+                <span class="k-muted" style="position: relative; font-size: 18px; font-weight: 400">or click to browse</span>
+              </div>
+            </div>
+            <div class="imp-pane" id="imp-p2">
+              <div class="imp-map"><span class="k-mono">Transaction Date</span><span class="k-muted">→</span><span>Date</span><span id="imp-t1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span></div>
+              <div class="imp-map"><span class="k-mono">Details</span><span class="k-muted">→</span><span>Description</span><span id="imp-t2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span></div>
+              <div class="imp-map"><span class="k-mono">Amount (GBP)</span><span class="k-muted">→</span><span>Amount</span><span id="imp-t3"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg></span></div>
+            </div>
+            <div class="imp-pane" id="imp-p3">
+              <div class="imp-review">
+                <div style="display: flex; align-items: center; gap: 14px"><span class="k-chip k-chip-accent" style="font-size: 16px; padding: 7px 12px">42 valid</span><span class="k-muted">Only valid rows will be imported.</span></div>
+                <div>
+                  <div style="display: flex; justify-content: space-between; margin-bottom: 12px" class="k-muted"><span>statement-march.csv</span><span><span id="imp-prog">0</span> / 42</span></div>
+                  <div class="k-bar"><i id="imp-fill"></i></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="k-modal-foot">
+            <div class="k-btn k-btn-ghost">Back</div>
+            <div class="k-btn k-btn-primary" id="imp-next"><span id="imp-next-label">Continue</span></div>
+          </div>
+        </div>
+
+        <div class="imp-file" id="imp-file"><i>CSV</i>statement-march.csv</div>
+
+        <div class="k-cursor" id="imp-cursor">
+          <svg viewBox="0 0 44 44"><path d="M9 6l24 15.5-10.8 2.3L16.4 34z" fill="#0c1a14" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var K = window.Kit;
+      var DUR = 11.8;
+
+      function build() {
+        var cam = document.getElementById("imp-cam");
+        var cursor = "#imp-cursor";
+        var open = K.point("#imp-open", cam, 0.5, 0.55);
+        var modal = K.point("#imp-modal", cam);
+        var drop = K.point("#imp-drop", cam, 0.5, 0.5);
+        var next = K.point("#imp-next", cam, 0.5, 0.55);
+        var pick = { x: 1330, y: 880 };
+        var fileW = document.getElementById("imp-file").offsetWidth;
+        // The file hangs just below the arrow, as if held.
+        function filePos(pt) {
+          return { x: pt.x - fileW * 0.35, y: pt.y + 10 };
+        }
+
+        var tl = gsap.timeline({ paused: true });
+        K.open(tl, cam);
+        K.hidden(["#imp-scrim", "#imp-modal", "#imp-file", "#imp-drop-on", "#imp-p2", "#imp-p3", "#imp-t1", "#imp-t2", "#imp-t3", "#imp-new-0", "#imp-new-1", "#imp-new-2", "#imp-new-3"]);
+        gsap.set(["#imp-s2", "#imp-s3"], { scaleX: 0 });
+        gsap.set("#imp-file", filePos(pick));
+        K.cursorSet(cursor, { x: 1060, y: 720 });
+        K.bar(tl, "#imp-fill", 0, 0, 0, 0.01);
+
+        // 1. Open the importer
+        K.cursorTo(tl, cursor, open, 0.5, 0.75);
+        K.press(tl, cursor, "#imp-open", 1.32);
+        K.fade(tl, "#imp-scrim", 0, 1, 1.46, 0.3);
+        K.show(tl, "#imp-modal", 1.5, { dur: 0.4 });
+        K.camTo(tl, cam, modal, 1.1, 1.5, 1.0);
+
+        // 2. Fetch the file and drop it in
+        K.cursorTo(tl, cursor, pick, 2.0, 0.6);
+        tl.fromTo("#imp-file", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.25, ease: "power3.out" }, 2.55);
+        K.press(tl, cursor, null, 2.6);
+        K.cursorTo(tl, cursor, drop, 2.95, 0.85);
+        var fp = filePos(drop);
+        tl.to("#imp-file", { x: fp.x, duration: 0.85, ease: "power2.inOut" }, 2.95);
+        tl.to("#imp-file", { y: fp.y, duration: 0.85, ease: "power3.inOut" }, 2.95);
+        K.fade(tl, "#imp-drop-on", 0, 1, 3.45, 0.2);
+        tl.to("#imp-file", { scale: 0.94, duration: 0.1, ease: "power2.in" }, 3.9);
+        tl.to("#imp-file", { opacity: 0, scale: 0.86, duration: 0.2, ease: "power2.in" }, 4.0);
+
+        // 3. Columns match themselves
+        tl.to("#imp-p1", { opacity: 0, duration: 0.18, ease: "power2.in" }, 4.1);
+        K.fade(tl, "#imp-p2", 0, 1, 4.26, 0.3);
+        tl.to("#imp-s2", { scaleX: 1, duration: 0.5, ease: "expo.out" }, 4.26);
+        K.swapText(tl, "#imp-sub", "Upload a CSV file from your bank.", "Match your columns to Budgetly's fields.", 4.26);
+        ["#imp-t1", "#imp-t2", "#imp-t3"].forEach(function (id, i) {
+          tl.fromTo(id, { opacity: 0, scale: 0.4 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, 4.6 + i * 0.26);
+        });
+        K.cursorTo(tl, cursor, next, 4.7, 0.7);
+        K.press(tl, cursor, "#imp-next", 5.7);
+
+        // 4. Review, then import
+        tl.to("#imp-p2", { opacity: 0, duration: 0.18, ease: "power2.in" }, 5.82);
+        K.fade(tl, "#imp-p3", 0, 1, 5.98, 0.3);
+        tl.to("#imp-s3", { scaleX: 1, duration: 0.5, ease: "expo.out" }, 5.98);
+        K.swapText(tl, "#imp-sub", "Match your columns to Budgetly's fields.", "Check the rows before anything is saved.", 5.98);
+        K.swapText(tl, "#imp-next-label", "Continue", "Import 42", 5.98);
+        K.press(tl, cursor, "#imp-next", 6.95);
+        K.bar(tl, "#imp-fill", 0, 1, 7.08, 0.95);
+        K.count(tl, "#imp-prog", 0, 42, 7.08, 0.95, function (v) { return String(Math.round(v)); });
+
+        // 5. The table fills
+        K.hide(tl, "#imp-modal", 8.25);
+        tl.to("#imp-scrim", { opacity: 0, duration: 0.3, ease: "power2.out" }, 8.25);
+        K.camReset(tl, cam, 8.27, 0.9);
+        tl.fromTo("#imp-rows", { y: 0 }, { y: 272, duration: 0.7, ease: "expo.out" }, 8.6);
+        ["#imp-new-0", "#imp-new-1", "#imp-new-2", "#imp-new-3"].forEach(function (id, i) {
+          tl.fromTo(id, { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 8.68 + (3 - i) * 0.08);
+        });
+        K.swapText(tl, "#imp-count", "SHOWING 1–3 OF 3 TRANSACTIONS", "SHOWING 1–7 OF 45 TRANSACTIONS", 8.7);
+        K.cursorTo(tl, cursor, { x: 1130, y: 700 }, 8.5, 1.0);
+
+        K.close(tl, cam, DUR);
+        tl.set({}, {}, DUR);
+        window.__timelines["import"] = tl;
+      }
+
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+      else build();
+    })();
+  </script>
+</template>

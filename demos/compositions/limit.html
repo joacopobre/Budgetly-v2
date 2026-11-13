@@ -1,0 +1,284 @@
+<!--
+  Demo: set a spending limit.
+  Add limit → Dining out → 80 → the limit appears at £45 of £80 → a new
+  expense takes it past 80%: the bar turns amber and an alert arrives.
+-->
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .lim-grid {
+      display: grid;
+      grid-template-columns: 1.42fr 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+    .lim-list {
+      position: relative;
+      height: 474px;
+      overflow: hidden;
+      padding: 0 30px;
+    }
+    .lim-item {
+      height: 158px;
+      padding: 30px 0 0;
+      border-top: 1.5px solid var(--bl-border);
+    }
+    .lim-item-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .lim-fig {
+      margin-left: auto;
+      font-size: 22px;
+      font-weight: 500;
+    }
+    .lim-new {
+      position: absolute;
+      left: 30px;
+      right: 30px;
+      top: 0;
+      border-top: 0;
+    }
+    .lim-act .k-row {
+      grid-template-columns: 1fr auto;
+      height: 76px;
+      padding: 0 26px;
+    }
+    .lim-act-body {
+      position: relative;
+      height: 304px;
+      overflow: hidden;
+    }
+    .lim-act-new {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 0;
+    }
+    .lim-act-new > span,
+    .lim-act .k-row > span {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.25;
+    }
+    .lim-modal {
+      width: 620px;
+      margin-left: -310px;
+    }
+    .lim-toast {
+      width: 470px;
+    }
+  </style>
+
+  <div id="root" data-composition-id="limit" data-width="1600" data-height="1000">
+    <div id="lim-screen" class="clip k-screen" data-start="0" data-duration="11.4" data-track-index="1">
+      <div id="lim-cam" class="k-cam">
+        <div class="k-app">
+          <div class="k-nav">
+            <div class="k-wrap k-nav-in">
+              <div class="k-logo"><i></i>Budgetly</div>
+              <div class="k-links"><span>Dashboard</span><span>Transactions</span><span class="is-active">Budgets</span></div>
+              <div class="k-nav-end">
+                <div class="k-bell" id="lim-bell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg><span class="k-bell-dot" id="lim-dot"></span>
+                </div>
+                <div class="k-avatar">MT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="k-page k-wrap">
+            <div class="k-head">
+              <div class="k-h1">Spending limits</div>
+              <div class="k-actions"><div class="k-btn k-btn-primary" id="lim-add">Add limit</div></div>
+            </div>
+
+            <div class="lim-grid">
+              <div>
+                <div class="k-label" style="margin-bottom: 14px">Monthly caps · reset on the 1st</div>
+                <div class="k-card" style="padding: 0">
+                  <div class="lim-list">
+                    <div id="lim-items">
+                      <div class="lim-item" style="border-top: 0">
+                    <div class="lim-item-top"><span class="k-card-title">Shopping</span><span class="lim-fig">£30 / £150</span></div>
+                    <div class="k-bar"><i style="clip-path: inset(0 80% 0 0 round 5px)"></i></div>
+                  </div>
+                      <div class="lim-item">
+                    <div class="lim-item-top"><span class="k-card-title">Subscriptions</span><span class="k-chip k-chip-warn">Near</span><span class="lim-fig">£42 / £50</span></div>
+                    <div class="k-bar"><i style="clip-path: inset(0 16% 0 0 round 5px); background: var(--bl-warning)"></i></div>
+                  </div>
+                      <div class="lim-item">
+                    <div class="lim-item-top"><span class="k-card-title">Entertainment</span><span class="lim-fig">£15 / £60</span></div>
+                    <div class="k-bar"><i style="clip-path: inset(0 75% 0 0 round 5px)"></i></div>
+                  </div>
+                    </div>
+                    <div class="lim-item lim-new" id="lim-new">
+                      <div class="lim-item-top"><span class="k-card-title">Dining out</span><span class="k-chip k-chip-warn" id="lim-near">Near</span><span class="lim-fig"><span id="lim-spent">£45</span> / £80</span></div>
+                      <div class="k-bar" style="position: relative"><i id="lim-fill"></i><i id="lim-fill-warn" style="position: absolute; inset: 0; background: var(--bl-warning)"></i></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="lim-act">
+                <div class="k-label" style="margin-bottom: 14px">This month</div>
+                <div class="k-table">
+                  <div class="lim-act-body">
+                    <div id="lim-act-rows">
+                      <div class="k-row" style="border-top: 0"><span><b class="k-strong">Lunch with Sam</b><small class="k-mono">10 MAR · DINING OUT</small></span><span class="k-end">-£18.00</span></div>
+                      <div class="k-row"><span><b class="k-strong">Spotify</b><small class="k-mono">09 MAR · SUBSCRIPTIONS</small></span><span class="k-end">-£11.99</span></div>
+                      <div class="k-row"><span><b class="k-strong">Pizza night</b><small class="k-mono">06 MAR · DINING OUT</small></span><span class="k-end">-£27.00</span></div>
+                      <div class="k-row"><span><b class="k-strong">New trainers</b><small class="k-mono">03 MAR · SHOPPING</small></span><span class="k-end">-£30.00</span></div>
+                    </div>
+                    <div class="k-row lim-act-new" id="lim-act-new">
+                      <div id="lim-act-wash" class="k-wash"></div>
+                      <span><b class="k-strong">Dinner out</b><small class="k-mono">12 MAR · DINING OUT</small></span><span class="k-end">-£22.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="k-scrim" id="lim-scrim" data-layout-allow-occlusion></div>
+        <div class="k-modal lim-modal" id="lim-modal" style="top: 250px" data-layout-allow-occlusion>
+          <div>
+            <div class="k-modal-title">New spending limit</div>
+            <div class="k-modal-sub">A monthly cap for one category.</div>
+          </div>
+          <div class="k-fields">
+            <div class="k-field">
+              Category
+              <div class="k-input" id="lim-f-cat"><div class="k-ring" id="lim-ring-cat"></div><span style="position: relative"><span id="lim-cat-ph" class="k-muted" style="font-weight: 400">Choose…</span><span id="lim-cat" style="position: absolute; left: 0; top: 0; white-space: nowrap">Dining out</span></span><svg class="k-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></div>
+            </div>
+            <div class="k-field">
+              Monthly limit
+              <div class="k-input" id="lim-f-amt"><div class="k-ring" id="lim-ring-amt"></div><span class="k-prefix">£</span><span id="lim-amt"></span><span class="k-caret" id="lim-caret"></span></div>
+            </div>
+          </div>
+          <div class="k-modal-foot">
+            <div class="k-btn k-btn-ghost">Cancel</div>
+            <div class="k-btn k-btn-primary" id="lim-save">Save limit</div>
+          </div>
+        </div>
+
+        <div class="k-menu" id="lim-menu" style="transform-origin: 0 0" data-layout-allow-occlusion>
+          <div class="k-menu-item" id="lim-opt"><div id="lim-hover" class="k-hover"></div><span>Dining out</span></div>
+          <div class="k-menu-item"><span>Food</span></div>
+          <div class="k-menu-item"><span>Transport</span></div>
+        </div>
+
+        <div class="k-toast lim-toast" id="lim-toast" data-layout-allow-occlusion>
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--bl-warning)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 2.5 20h19L12 3.5z" /><path d="M12 10v4.5M12 17.4v.1" /></svg>
+          <div><div style="font-weight: 500">Dining out is at 84% of its limit</div><div class="k-muted" style="font-size: 18px; margin-top: 4px">£67 of £80 spent this month</div></div>
+        </div>
+
+        <div class="k-cursor" id="lim-cursor">
+          <svg viewBox="0 0 44 44"><path d="M9 6l24 15.5-10.8 2.3L16.4 34z" fill="#0c1a14" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var K = window.Kit;
+      var DUR = 11.4;
+
+      function build() {
+        var cam = document.getElementById("lim-cam");
+        var cursor = "#lim-cursor";
+        var fieldBox = K.box("#lim-f-cat", cam);
+        var menu = document.getElementById("lim-menu");
+        menu.style.left = fieldBox.x + "px";
+        menu.style.top = fieldBox.y + fieldBox.h + 8 + "px";
+        menu.style.width = fieldBox.w + "px";
+        var bell = K.box("#lim-bell", cam);
+        var toast = document.getElementById("lim-toast");
+        toast.style.left = bell.x + bell.w - 470 + "px";
+        toast.style.top = bell.y + bell.h + 18 + "px";
+
+        var add = K.point("#lim-add", cam, 0.5, 0.55);
+        var modal = K.point("#lim-modal", cam);
+        var fCat = K.point("#lim-f-cat", cam, 0.6, 0.55);
+        var opt = K.point("#lim-opt", cam, 0.4, 0.55);
+        var fAmt = K.point("#lim-f-amt", cam, 0.55, 0.55);
+        var save = K.point("#lim-save", cam, 0.5, 0.55);
+
+        var tl = gsap.timeline({ paused: true });
+        K.open(tl, cam);
+        K.hidden(["#lim-cat", "#lim-scrim", "#lim-modal", "#lim-menu", "#lim-hover", "#lim-ring-cat", "#lim-ring-amt", "#lim-caret", "#lim-new", "#lim-near", "#lim-fill-warn", "#lim-act-new", "#lim-act-wash", "#lim-toast", "#lim-dot"]);
+        K.cursorSet(cursor, { x: 1020, y: 780 });
+        K.bar(tl, "#lim-fill", 0, 0, 0, 0.01);
+        K.bar(tl, "#lim-fill-warn", 0.5625, 0.5625, 0, 0.01);
+
+        // 1. New limit
+        K.cursorTo(tl, cursor, add, 0.5, 0.75);
+        K.press(tl, cursor, "#lim-add", 1.32);
+        K.fade(tl, "#lim-scrim", 0, 1, 1.46, 0.3);
+        K.show(tl, "#lim-modal", 1.5, { dur: 0.4 });
+        K.camTo(tl, cam, modal, 1.14, 1.5, 1.0);
+
+        // 2. Category
+        K.cursorTo(tl, cursor, fCat, 2.05, 0.6);
+        K.press(tl, cursor, null, 2.7);
+        K.focus(tl, "#lim-ring-cat", 2.74);
+        K.show(tl, "#lim-menu", 2.8, { scale: 0.96, y: -6, dur: 0.26 });
+        K.cursorTo(tl, cursor, opt, 3.08, 0.3);
+        K.fade(tl, "#lim-hover", 0, 1, 3.22, 0.12);
+        K.press(tl, cursor, null, 3.5);
+        K.hide(tl, "#lim-menu", 3.6, { y: -4 });
+        tl.to("#lim-cat-ph", { opacity: 0, duration: 0.08 }, 3.6);
+        tl.fromTo("#lim-cat", { opacity: 0 }, { opacity: 1, duration: 0.12 }, 3.6);
+
+        // 3. Amount
+        K.cursorTo(tl, cursor, fAmt, 3.78, 0.45);
+        K.press(tl, cursor, null, 4.26);
+        K.blur(tl, "#lim-ring-cat", 4.3);
+        K.focus(tl, "#lim-ring-amt", 4.3);
+        K.caret(tl, "#lim-caret", 4.35, 5.85);
+        K.type(tl, "#lim-amt", "80", 4.65, { cps: 5 });
+
+        // 4. Save: the limit appears with this month's spending
+        K.cursorTo(tl, cursor, save, 5.2, 0.55);
+        K.press(tl, cursor, "#lim-save", 5.8);
+        K.hide(tl, "#lim-modal", 5.92);
+        K.blur(tl, "#lim-ring-amt", 5.92);
+        tl.to("#lim-scrim", { opacity: 0, duration: 0.3, ease: "power2.out" }, 5.92);
+        K.camReset(tl, cam, 5.94, 0.9);
+        tl.fromTo("#lim-items", { y: 0 }, { y: 158, duration: 0.65, ease: "expo.out" }, 6.3);
+        tl.fromTo("#lim-new", { opacity: 0, y: -16 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 6.38);
+        K.bar(tl, "#lim-fill", 0, 0.5625, 6.5, 1.0);
+        K.cursorTo(tl, cursor, { x: 1090, y: 690 }, 6.2, 1.0);
+
+        // 5. A new expense takes it past 80%
+        tl.fromTo("#lim-act-rows", { y: 0 }, { y: 76, duration: 0.6, ease: "expo.out" }, 7.9);
+        tl.fromTo("#lim-act-new", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 7.97);
+        tl.fromTo("#lim-act-wash", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 7.97);
+        tl.to("#lim-act-wash", { opacity: 0, duration: 1.4, ease: "power2.inOut" }, 8.5);
+        K.bar(tl, "#lim-fill", 0.5625, 0.8375, 8.25, 0.9);
+        K.bar(tl, "#lim-fill-warn", 0.5625, 0.8375, 8.25, 0.9);
+        K.fade(tl, "#lim-fill-warn", 0, 1, 8.45, 0.5);
+        K.count(tl, "#lim-spent", 45, 67, 8.25, 0.9, function (v) { return K.money(v, { decimals: "never" }); });
+        tl.fromTo("#lim-near", { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(1.8)" }, 8.75);
+        tl.fromTo("#lim-dot", { opacity: 0, scale: 0 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2.2)" }, 9.0);
+        K.show(tl, "#lim-toast", 9.1, { scale: 0.96, y: -10, dur: 0.45 });
+
+        K.close(tl, cam, DUR);
+        tl.set({}, {}, DUR);
+        window.__timelines["limit"] = tl;
+      }
+
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+      else build();
+    })();
+  </script>
+</template>

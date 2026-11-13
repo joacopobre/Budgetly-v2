@@ -1,0 +1,272 @@
+<!--
+  Demo: the dashboard.
+  The range switches from "This month" to "This year": the bars regroup by
+  month, the figures count to their new values and the net worth line
+  redraws. Then it switches back, so the loop closes where it began.
+-->
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .dash-stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .dash-stat {
+      padding: 24px 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .dash-stat .k-amount {
+      font-size: 38px;
+    }
+    .dash-sub {
+      font-size: 17px;
+    }
+    .dash-main {
+      display: grid;
+      grid-template-columns: 1.5fr 1fr;
+      gap: 16px;
+    }
+    .dash-card-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 22px;
+    }
+    .dash-legend {
+      display: flex;
+      gap: 20px;
+      font-size: 17px;
+      color: var(--bl-fg-muted);
+    }
+    .dash-legend i {
+      display: inline-block;
+      width: 11px;
+      height: 11px;
+      border-radius: 3px;
+      margin-right: 8px;
+      background: var(--bl-accent);
+    }
+    .dash-legend i.out {
+      background: var(--bl-fg-faint);
+    }
+    .dash-plot {
+      position: relative;
+      height: 306px;
+      border-bottom: 1.5px solid var(--bl-border);
+      margin-bottom: 34px;
+    }
+    .dash-set {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+    }
+    .dash-group {
+      position: relative;
+      height: 100%;
+      flex: 1;
+      display: flex;
+      justify-content: center;
+    }
+    .dash-pair {
+      height: 100%;
+      display: flex;
+      align-items: flex-end;
+      gap: 5px;
+    }
+    .dash-bar {
+      display: block;
+      width: 30px;
+      border-radius: 6px 6px 0 0;
+      background: var(--bl-accent);
+      transform-origin: 50% 100%;
+    }
+    #dash-year .dash-bar {
+      width: 14px;
+      border-radius: 4px 4px 0 0;
+    }
+    #dash-year .dash-pair {
+      gap: 3px;
+    }
+    .dash-bar-out {
+      background: var(--bl-fg-faint);
+    }
+    .dash-group .k-mono {
+      position: absolute;
+      bottom: -30px;
+      font-family: var(--bl-font-mono);
+      font-size: 14px;
+      letter-spacing: 0.04em;
+      color: var(--bl-fg-muted);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+    .dash-nw svg {
+      width: 100%;
+      height: 196px;
+      overflow: visible;
+      margin-top: 26px;
+    }
+    .dash-range {
+      position: relative;
+    }
+  </style>
+
+  <div id="root" data-composition-id="dashboard" data-width="1600" data-height="1000">
+    <div id="dash-screen" class="clip k-screen" data-start="0" data-duration="10.4" data-track-index="1">
+      <div id="dash-cam" class="k-cam">
+        <div class="k-app">
+          <div class="k-nav">
+            <div class="k-wrap k-nav-in">
+              <div class="k-logo"><i></i>Budgetly</div>
+              <div class="k-links"><span class="is-active">Dashboard</span><span>Transactions</span><span>Budgets</span></div>
+              <div class="k-nav-end">
+                <div class="k-bell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+                </div>
+                <div class="k-avatar">MT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="k-page k-wrap" style="gap: 24px">
+            <div class="k-head">
+              <div class="k-h1">Dashboard</div>
+              <div class="k-actions">
+                <div class="k-btn k-btn-ghost dash-range" id="dash-range"><span id="dash-range-label">This month</span><svg style="width: 22px; height: 22px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg></div>
+                <div class="k-btn k-btn-primary">Add transaction</div>
+              </div>
+            </div>
+
+            <div class="dash-stats">
+              <div class="k-card dash-stat"><div class="k-label">Total balance</div><div class="k-amount " id="dash-bal">£17,556.00</div><div class="k-muted dash-sub" id="dash-bal-sub">£12,406 available</div></div>
+              <div class="k-card dash-stat"><div class="k-label">Income</div><div class="k-amount k-pos" id="dash-inc">£4,355</div><div class="k-muted dash-sub" id="dash-inc-sub">This month</div></div>
+              <div class="k-card dash-stat"><div class="k-label">Spent</div><div class="k-amount " id="dash-out">£1,304</div><div class="k-muted dash-sub" id="dash-out-sub">This month</div></div>
+              <div class="k-card dash-stat"><div class="k-label">Net savings</div><div class="k-amount " id="dash-net">£3,051</div><div class="k-muted dash-sub" id="dash-net-sub">70% of income</div></div>
+            </div>
+
+            <div class="dash-main">
+              <div class="k-card">
+                <div class="dash-card-head">
+                  <span class="k-card-title">Income and spending</span>
+                  <span class="dash-legend"><span><i></i>Income</span><span><i class="out"></i>Spending</span></span>
+                </div>
+                <div class="dash-plot">
+                  <div class="dash-set" id="dash-month"><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-m-bar" style="height: 77%"></i><i class="dash-bar dash-bar-out dash-m-bar" style="height: 20%"></i></div><span class="k-mono dash-m-lab">1–7 Mar</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-m-bar" style="height: 55%"></i><i class="dash-bar dash-bar-out dash-m-bar" style="height: 27%"></i></div><span class="k-mono dash-m-lab">8–14 Mar</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-m-bar" style="height: 66%"></i><i class="dash-bar dash-bar-out dash-m-bar" style="height: 17%"></i></div><span class="k-mono dash-m-lab">15–21 Mar</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-m-bar" style="height: 93%"></i><i class="dash-bar dash-bar-out dash-m-bar" style="height: 23%"></i></div><span class="k-mono dash-m-lab">22–31 Mar</span></div></div>
+                  <div class="dash-set" id="dash-year"><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 72%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 54%"></i></div><span class="k-mono dash-y-lab">Apr</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 76%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 52%"></i></div><span class="k-mono dash-y-lab">May</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 78%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 48%"></i></div><span class="k-mono dash-y-lab">Jun</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 74%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 58%"></i></div><span class="k-mono dash-y-lab">Jul</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 85%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 50%"></i></div><span class="k-mono dash-y-lab">Aug</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 89%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 59%"></i></div><span class="k-mono dash-y-lab">Sep</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 80%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 46%"></i></div><span class="k-mono dash-y-lab">Oct</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 70%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 39%"></i></div><span class="k-mono dash-y-lab">Nov</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 76%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 35%"></i></div><span class="k-mono dash-y-lab">Dec</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 89%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 50%"></i></div><span class="k-mono dash-y-lab">Jan</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 91%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 59%"></i></div><span class="k-mono dash-y-lab">Feb</span></div><div class="dash-group"><div class="dash-pair"><i class="dash-bar dash-y-bar" style="height: 95%"></i><i class="dash-bar dash-bar-out dash-y-bar" style="height: 28%"></i></div><span class="k-mono dash-y-lab">Mar</span></div></div>
+                </div>
+              </div>
+
+              <div class="k-card dash-nw">
+                <div class="dash-card-head" style="margin-bottom: 14px"><span class="k-card-title">Net worth</span><span class="k-chip k-chip-accent" id="dash-nw-chip">+£1,156</span></div>
+                <div class="k-amount">£17,556</div>
+                <svg viewBox="0 0 440 150" preserveAspectRatio="none">
+                  <path id="dash-line-m" d="M 0.0 116.7 C 44.0 116.7, 44.0 95.8, 88.0 95.8 C 132.0 95.8, 132.0 108.3, 176.0 108.3 C 220.0 108.3, 220.0 58.3, 264.0 58.3 C 308.0 58.3, 308.0 66.7, 352.0 66.7 C 396.0 66.7, 396.0 20.3, 440.0 20.3" fill="none" stroke="var(--bl-accent)" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" />
+                  <path id="dash-line-y" d="M 0.0 137.0 C 20.0 137.0, 20.0 128.8, 40.0 128.8 C 60.0 128.8, 60.0 119.0, 80.0 119.0 C 100.0 119.0, 100.0 114.1, 120.0 114.1 C 140.0 114.1, 140.0 104.3, 160.0 104.3 C 180.0 104.3, 180.0 94.6, 200.0 94.6 C 220.0 94.6, 220.0 83.2, 240.0 83.2 C 260.0 83.2, 260.0 71.7, 280.0 71.7 C 300.0 71.7, 300.0 48.9, 320.0 48.9 C 340.0 48.9, 340.0 37.5, 360.0 37.5 C 380.0 37.5, 380.0 29.3, 400.0 29.3 C 420.0 29.3, 420.0 10.5, 440.0 10.5" fill="none" stroke="var(--bl-accent)" stroke-width="3.5" stroke-linecap="round" vector-effect="non-scaling-stroke" pathLength="1" stroke-dasharray="1" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="k-menu" id="dash-menu" data-layout-allow-occlusion>
+          <div class="k-menu-item" id="dash-opt-m"><div id="dash-hover-m" class="k-hover"></div><span>This month</span></div>
+          <div class="k-menu-item"><span>Last 3 months</span></div>
+          <div class="k-menu-item" id="dash-opt-y"><div id="dash-hover-y" class="k-hover"></div><span>This year</span></div>
+        </div>
+
+        <div class="k-cursor" id="dash-cursor">
+          <svg viewBox="0 0 44 44"><path d="M9 6l24 15.5-10.8 2.3L16.4 34z" fill="#0c1a14" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var K = window.Kit;
+      var DUR = 10.4;
+      var whole = function (v) { return K.money(v, { decimals: "never" }); };
+
+      function build() {
+        var cam = document.getElementById("dash-cam");
+        var cursor = "#dash-cursor";
+        var rangeBox = K.box("#dash-range", cam);
+        var menu = document.getElementById("dash-menu");
+        menu.style.left = rangeBox.x + rangeBox.w - 260 + "px";
+        menu.style.top = rangeBox.y + rangeBox.h + 8 + "px";
+        var range = K.point("#dash-range", cam, 0.5, 0.55);
+        var optY = K.point("#dash-opt-y", cam, 0.4, 0.55);
+        var optM = K.point("#dash-opt-m", cam, 0.4, 0.55);
+
+        var tl = gsap.timeline({ paused: true });
+        K.open(tl, cam);
+        K.hidden(["#dash-menu", "#dash-hover-m", "#dash-hover-y"]);
+        gsap.set(".dash-y-bar", { scaleY: 0 });
+        gsap.set(".dash-y-lab", { opacity: 0 });
+        gsap.set("#dash-line-y", { strokeDashoffset: 1, opacity: 0 });
+        gsap.set("#dash-line-m", { strokeDashoffset: 0 });
+        K.cursorSet(cursor, { x: 900, y: 640 });
+
+        function switchTo(year, at) {
+          var from = year ? ".dash-m-bar" : ".dash-y-bar";
+          var to = year ? ".dash-y-bar" : ".dash-m-bar";
+          tl.to(from, { scaleY: 0, duration: 0.32, ease: "power2.in", stagger: 0.012 }, at);
+          tl.to(year ? ".dash-m-lab" : ".dash-y-lab", { opacity: 0, duration: 0.2, ease: "power2.in" }, at);
+          tl.to(year ? ".dash-y-lab" : ".dash-m-lab", { opacity: 1, duration: 0.4, ease: "power2.out" }, at + 0.35);
+          tl.to(to, { scaleY: 1, duration: 0.9, ease: "expo.out", stagger: year ? 0.022 : 0.05 }, at + 0.3);
+          K.count(tl, "#dash-inc", year ? 4355 : 46120, year ? 46120 : 4355, at + 0.1, 1.2, whole);
+          K.count(tl, "#dash-out", year ? 1304 : 28564, year ? 28564 : 1304, at + 0.1, 1.2, whole);
+          K.count(tl, "#dash-net", year ? 3051 : 17556, year ? 17556 : 3051, at + 0.1, 1.2, whole);
+          K.swapText(tl, "#dash-inc-sub", year ? "This month" : "This year", year ? "This year" : "This month", at + 0.1);
+          K.swapText(tl, "#dash-out-sub", year ? "This month" : "This year", year ? "This year" : "This month", at + 0.1);
+          K.swapText(tl, "#dash-net-sub", year ? "70% of income" : "38% of income", year ? "38% of income" : "70% of income", at + 0.1);
+          K.swapText(tl, "#dash-nw-chip", year ? "+£1,156" : "+£7,756", year ? "+£7,756" : "+£1,156", at + 0.1);
+          K.swapText(tl, "#dash-range-label", year ? "This month" : "This year", year ? "This year" : "This month", at);
+          var a = year ? "#dash-line-m" : "#dash-line-y";
+          var b = year ? "#dash-line-y" : "#dash-line-m";
+          tl.to(a, { opacity: 0, duration: 0.25, ease: "power2.in" }, at);
+          tl.set(a, { strokeDashoffset: 1 }, at + 0.26);
+          tl.set(b, { opacity: 1 }, at + 0.26);
+          tl.to(b, { strokeDashoffset: 0, duration: 1.3, ease: "power2.inOut" }, at + 0.28);
+        }
+
+        function choose(option, hover, at) {
+          K.cursorTo(tl, cursor, range, at, 0.7);
+          K.press(tl, cursor, "#dash-range", at + 0.78);
+          K.show(tl, "#dash-menu", at + 0.88, { scale: 0.95, y: -6, dur: 0.26 });
+          K.cursorTo(tl, cursor, option, at + 1.2, 0.36);
+          K.fade(tl, hover, 0, 1, at + 1.38, 0.12);
+          K.press(tl, cursor, null, at + 1.72);
+          K.hide(tl, "#dash-menu", at + 1.82, { y: -4 });
+          tl.to(hover, { opacity: 0, duration: 0.1 }, at + 2.0);
+          return at + 1.84;
+        }
+
+        // 1. This month → This year
+        var t = choose(optY, "#dash-hover-y", 0.6);
+        switchTo(true, t);
+        K.cursorTo(tl, cursor, { x: 760, y: 610 }, t + 0.2, 1.1);
+
+        // 2. …and back, so the loop ends where it started
+        t = choose(optM, "#dash-hover-m", 5.5);
+        switchTo(false, t);
+        K.cursorTo(tl, cursor, { x: 900, y: 640 }, t + 0.2, 1.1);
+
+        K.close(tl, cam, DUR);
+        tl.set({}, {}, DUR);
+        window.__timelines["dashboard"] = tl;
+      }
+
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+      else build();
+    })();
+  </script>
+</template>

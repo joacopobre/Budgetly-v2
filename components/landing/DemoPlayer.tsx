@@ -20,7 +20,8 @@ import { cn } from '@/lib/utils'
  * - Server-renders only a still frame (the poster), so there is nothing to
  *   hydrate and no layout shift.
  * - The player and its runtime load only when the demo nears the viewport.
- * - It plays only while visible, in the foreground tab, and `active`.
+ * - It plays only while visible, in the foreground tab, and `active`. Until it
+ *   has played, the poster stays on top.
  * - With reduced motion the player never loads: the poster is the demo.
  * - Changing `demo` on a mounted player just moves it to another scene of the
  *   same composition, so a whole section can share one player.
@@ -52,6 +53,7 @@ export default function DemoPlayer({ demo, label, active = true, crop = 'full', 
   const [near, setNear] = useState(false)
   const [visible, setVisible] = useState(false)
   const [ready, setReady] = useState(false)
+  const [started, setStarted] = useState(false)
   const [switching, setSwitching] = useState(false)
   const [reduced, setReduced] = useState(false)
 
@@ -114,6 +116,7 @@ export default function DemoPlayer({ demo, label, active = true, crop = 'full', 
     return () => {
       cancelled = true
       setReady(false)
+      setStarted(false)
       if (el) {
         el.removeEventListener('ready', onReady)
         el.pause()
@@ -128,7 +131,10 @@ export default function DemoPlayer({ demo, label, active = true, crop = 'full', 
     const el = playerRef.current
     if (!el || !ready) return
     const sync = () => {
-      if (visible && active && !switching && !document.hidden) el.play()
+      if (visible && active && !switching && !document.hidden) {
+        el.play()
+        setStarted(true)
+      }
       else el.pause()
     }
     sync()
@@ -149,8 +155,14 @@ export default function DemoPlayer({ demo, label, active = true, crop = 'full', 
       const slot = demoSlot(demo)
       shownDemo.current = demo
       el.pause()
-      el.rangeStart = slot.start
-      el.rangeEnd = slot.end
+      // Widen before narrowing, so the range is never empty in between.
+      if (slot.start >= (el.rangeEnd ?? Infinity)) {
+        el.rangeEnd = slot.end
+        el.rangeStart = slot.start
+      } else {
+        el.rangeStart = slot.start
+        el.rangeEnd = slot.end
+      }
       el.seek(slot.start)
       setSwitching(false)
     }, SWITCH_OUT_MS)
@@ -183,7 +195,7 @@ export default function DemoPlayer({ demo, label, active = true, crop = 'full', 
         <div
           ref={mountRef}
           className="demo-player__live"
-          data-live={ready && !switching ? 'true' : 'false'}
+          data-live={ready && started && !switching ? 'true' : 'false'}
         />
       </div>
     </div>
