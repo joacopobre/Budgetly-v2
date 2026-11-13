@@ -1,0 +1,64 @@
+<!doctype html>
+<!--
+  Budgetly product demos — one HyperFrames project, one scene per demo.
+
+  Each scene lives in compositions/<name>.html and plays in its own slot on the
+  root timeline below. The landing page embeds this file with the HyperFrames
+  player and plays one slot at a time (range-start / range-end), so the slot
+  times here must match lib/demos.ts in the app.
+
+  Theme: add ?theme=dark to the URL, or set the "theme" variable.
+-->
+<html
+  lang="en"
+  data-composition-variables='[{"id":"theme","type":"enum","label":"Theme","default":"light","options":[{"value":"light","label":"Light"},{"value":"dark","label":"Dark"}]}]'
+>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1600, height=1000" />
+    <title>Budgetly demos</title>
+    <link rel="stylesheet" href="assets/tokens.css" />
+    <link rel="stylesheet" href="assets/kit.css" />
+    <script src="assets/vendor/gsap.min.js"></script>
+    <script src="assets/kit.js"></script>
+    <script>
+      (function () {
+        var theme = null;
+        try {
+          theme = new URLSearchParams(location.search).get("theme");
+        } catch (e) {}
+        try {
+          var vars = window.__hyperframes && window.__hyperframes.getVariables && window.__hyperframes.getVariables();
+          if (!theme && vars && vars.theme) theme = vars.theme;
+        } catch (e) {}
+        if (theme === "dark") document.documentElement.setAttribute("data-theme", "dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="9.6"
+      data-width="1600"
+      data-height="1000"
+    >
+      <div
+        id="fund"
+        data-composition-id="fund"
+        data-composition-src="compositions/fund.html"
+        data-start="0"
+        data-duration="9.6"
+        data-track-index="1"
+        data-track-kind="graphics"
+        data-width="1600"
+        data-height="1000"
+      ></div>
+    </div>
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

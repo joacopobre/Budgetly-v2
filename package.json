@@ -6,7 +6,11 @@
     "dev": "next dev --hostname localhost",
     "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "demos:sync": "node scripts/demos-sync.mjs",
+    "demos:preview": "cd demos && npx --yes hyperframes@0.9.40 preview",
+    "demos:check": "cd demos && npx --yes hyperframes@0.9.40 check",
+    "demos:posters": "node scripts/demos-posters.mjs"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",

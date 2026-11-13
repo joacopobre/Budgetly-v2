@@ -1,21 +1,21 @@
-import { Playfair_Display, Inter } from 'next/font/google'
+import { Geist_Mono } from 'next/font/google'
+import { switzerVariable } from '../fonts'
 import { ThemeProvider } from '@/context/ThemeContext'
+import LandingRoot from '@/components/landing/LandingRoot'
+import './landing.css'
 
-const playfair = Playfair_Display({
+const geistMono = Geist_Mono({
   subsets: ['latin'],
-  weight: ['400', '700', '900'],
-  variable: '--font-playfair',
+  variable: '--font-geist-mono',
+  display: 'swap',
 })
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
-export default function MarketingLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function MarketingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div id="font-root" className={`${playfair.variable} ${inter.variable} overflow-x-hidden`}>
-      <ThemeProvider>{children}</ThemeProvider>
-    </div>
+    <ThemeProvider>
+      <LandingRoot fontVariables={`${switzerVariable.variable} ${geistMono.variable}`}>
+        {children}
+      </LandingRoot>
+    </ThemeProvider>
   )
 }

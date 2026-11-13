@@ -1,0 +1,138 @@
+/*
+ * Budgetly design tokens — the single source of truth.
+ *
+ * Consumed by:
+ *   - app/globals.css      (mapped to Tailwind utilities in @theme)
+ *   - demos/               (HyperFrames product demos, via `npm run demos:sync`)
+ *   - lib/motion.ts        (mirrors the motion values for GSAP)
+ *
+ * Everything is prefixed --bl- so it cannot collide with the shadcn variables
+ * the in-app UI still uses. The app redesign (phase 2) moves onto these.
+ *
+ * Dark theme: add `.dark` or `data-theme="dark"` on any ancestor.
+ */
+
+:root {
+  /* ── Raw palette ─────────────────────────────────────────────────────────── */
+  --bl-forest-950: #06120e;
+  --bl-forest-900: #0a1c15;
+  --bl-forest-800: #10281e;
+  --bl-forest-700: #1b3a2c;
+  --bl-forest-600: #2a5240;
+
+  --bl-paper: #f3f5f0;
+  --bl-paper-sunk: #e9ece4;
+  --bl-white: #ffffff;
+  --bl-rule: #d9ded3;
+  --bl-ink: #0c1a14;
+  --bl-ink-soft: #55635b;
+  --bl-ink-faint: #8a958e;
+
+  --bl-emerald: #10b981;
+  --bl-emerald-deep: #0a7a55;
+  --bl-mint: #7ee8b7;
+  --bl-coral: #d8503c;
+  --bl-coral-soft: #f08a78;
+  --bl-amber: #c98a1b;
+  --bl-amber-soft: #e9b657;
+
+  /* ── Semantic colour (light) ─────────────────────────────────────────────── */
+  --bl-bg: var(--bl-paper);
+  --bl-bg-sunk: var(--bl-paper-sunk);
+  --bl-surface: var(--bl-white);
+  --bl-surface-raised: var(--bl-white);
+  --bl-fg: var(--bl-ink);
+  --bl-fg-muted: var(--bl-ink-soft);
+  --bl-fg-faint: var(--bl-ink-faint);
+  --bl-border: var(--bl-rule);
+  --bl-border-strong: #c3cabc;
+
+  --bl-accent: var(--bl-emerald); /* fills: progress, focus, CTA on dark */
+  --bl-accent-fg: var(--bl-emerald-deep); /* accent-coloured text */
+  --bl-accent-soft: rgb(16 185 129 / 0.12);
+  --bl-on-accent: var(--bl-forest-950);
+
+  --bl-positive: var(--bl-emerald-deep);
+  --bl-negative: var(--bl-coral);
+  --bl-negative-soft: rgb(216 80 60 / 0.1);
+  --bl-warning: var(--bl-amber);
+  --bl-warning-soft: rgb(201 138 27 / 0.12);
+
+  --bl-btn-bg: var(--bl-ink);
+  --bl-btn-fg: var(--bl-paper);
+  --bl-focus-ring: rgb(16 185 129 / 0.22);
+  --bl-scrim: rgb(12 26 20 / 0.32);
+
+  /* ── Typography ──────────────────────────────────────────────────────────── */
+  --bl-font-sans: var(--font-switzer, 'Switzer'), 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  --bl-font-mono: var(--font-geist-mono, 'Geist Mono'), ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --bl-text-display-xl: clamp(3.25rem, 8.6vw, 8rem);
+  --bl-text-display-lg: clamp(2.5rem, 5.6vw, 4.75rem);
+  --bl-text-display-md: clamp(2rem, 3.6vw, 3rem);
+  --bl-text-title: 1.5rem;
+  --bl-text-lead: 1.25rem;
+  --bl-text-body: 1rem;
+  --bl-text-small: 0.875rem;
+  --bl-text-label: 0.75rem;
+
+  --bl-leading-display: 0.98;
+  --bl-leading-heading: 1.08;
+  --bl-leading-body: 1.6;
+  --bl-tracking-display: -0.045em;
+  --bl-tracking-heading: -0.03em;
+  --bl-tracking-label: 0.08em;
+
+  /* ── Radii ───────────────────────────────────────────────────────────────── */
+  --bl-radius-sm: 6px;
+  --bl-radius-md: 10px;
+  --bl-radius-lg: 16px;
+  --bl-radius-xl: 24px;
+  --bl-radius-pill: 999px;
+
+  /* ── Shadows (tinted with ink green, never pure black on paper) ──────────── */
+  --bl-shadow-sm: 0 1px 2px rgb(12 26 20 / 0.06);
+  --bl-shadow-md: 0 1px 2px rgb(12 26 20 / 0.05), 0 12px 32px -12px rgb(12 26 20 / 0.16);
+  --bl-shadow-lg: 0 2px 4px rgb(12 26 20 / 0.04), 0 32px 80px -24px rgb(12 26 20 / 0.28);
+
+  /* ── Motion ──────────────────────────────────────────────────────────────── */
+  --bl-dur-1: 120ms; /* press, hover */
+  --bl-dur-2: 200ms; /* small UI changes */
+  --bl-dur-3: 320ms; /* menus, modals */
+  --bl-dur-4: 600ms; /* section reveals */
+  --bl-dur-5: 900ms; /* hero, large moves */
+  --bl-ease-out: cubic-bezier(0.16, 1, 0.3, 1); /* entrances: long tail */
+  --bl-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1); /* moves, cursor */
+  --bl-ease-in: cubic-bezier(0.7, 0, 0.84, 0); /* exits */
+}
+
+.dark,
+[data-theme='dark'] {
+  --bl-bg: var(--bl-forest-900);
+  --bl-bg-sunk: var(--bl-forest-950);
+  --bl-surface: var(--bl-forest-800);
+  --bl-surface-raised: #153326;
+  --bl-fg: #e8efea;
+  --bl-fg-muted: #93a69b;
+  --bl-fg-faint: #6b7f74;
+  --bl-border: var(--bl-forest-700);
+  --bl-border-strong: var(--bl-forest-600);
+
+  --bl-accent-fg: var(--bl-mint);
+  --bl-accent-soft: rgb(126 232 183 / 0.12);
+
+  --bl-positive: var(--bl-mint);
+  --bl-negative: var(--bl-coral-soft);
+  --bl-negative-soft: rgb(240 138 120 / 0.12);
+  --bl-warning: var(--bl-amber-soft);
+  --bl-warning-soft: rgb(233 182 87 / 0.12);
+
+  --bl-btn-bg: #e8efea;
+  --bl-btn-fg: var(--bl-forest-950);
+  --bl-focus-ring: rgb(126 232 183 / 0.24);
+  --bl-scrim: rgb(3 9 7 / 0.56);
+
+  --bl-shadow-sm: 0 1px 2px rgb(0 0 0 / 0.3);
+  --bl-shadow-md: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px -12px rgb(0 0 0 / 0.55);
+  --bl-shadow-lg: 0 2px 4px rgb(0 0 0 / 0.3), 0 40px 96px -24px rgb(0 0 0 / 0.7);
+}

@@ -21,3 +21,16 @@ export const switzer = localFont({
 
   fallback: ["system-ui", "Segoe UI", "Roboto", "Helvetica", "Arial"],
 });
+
+/* ── Redesign typefaces ────────────────────────────────────────────────────────
+   Exposed as CSS variables and picked up by styles/tokens.css
+   (--bl-font-sans, --bl-font-mono). */
+
+export const switzerVariable = localFont({
+  src: "../public/fonts/Switzer_Complete/Fonts/WEB/fonts/Switzer-Variable.woff2",
+  weight: "100 900",
+  style: "normal",
+  variable: "--font-switzer",
+  display: "swap",
+  fallback: ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
+});

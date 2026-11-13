@@ -1,0 +1,266 @@
+<!--
+  Demo: fund a savings budget.
+  Budgets page → card menu → Add funds → type 250 → the bar fills, the balance
+  counts up and a row lands in Recent adjustments.
+-->
+<template>
+  <style>
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    .fund-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .fund-card-top {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      height: 44px;
+    }
+    .fund-card-top .k-icon-btn {
+      margin-left: auto;
+      position: relative;
+    }
+    .fund-card-mid {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .fund-card .k-bar {
+      margin-top: 22px;
+    }
+    .fund-adj {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .fund-adj .k-row {
+      grid-template-columns: 1.5fr 0.8fr 0.8fr 0.8fr;
+      height: 62px;
+    }
+    .fund-adj .k-row-head {
+      height: 50px;
+    }
+    .fund-adj-body {
+      position: relative;
+      height: 186px;
+      overflow: hidden;
+    }
+    .fund-adj-new {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      border-top: 0;
+    }
+  </style>
+
+  <div id="root" data-composition-id="fund" data-width="1600" data-height="1000">
+    <div id="fund-screen" class="clip k-screen" data-start="0" data-duration="9.6" data-track-index="1">
+      <div id="fund-cam" class="k-cam">
+        <div class="k-app">
+          <div class="k-nav">
+            <div class="k-wrap k-nav-in">
+              <div class="k-logo"><i></i>Budgetly</div>
+              <div class="k-links"><span>Dashboard</span><span>Transactions</span><span class="is-active">Budgets</span></div>
+              <div class="k-nav-end">
+                <div class="k-bell">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" /><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" /></svg>
+                </div>
+                <div class="k-avatar">MT</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="k-page k-wrap">
+            <div class="k-head">
+              <div class="k-h1">Budgets</div>
+              <div class="k-actions"><div class="k-btn k-btn-primary">Add budget</div></div>
+            </div>
+
+            <div class="fund-grid">
+              <div class="k-card fund-card">
+                <div class="fund-card-top">
+                  <span class="k-card-title">Groceries</span><span class="k-chip">Spend</span>
+                  <div class="k-icon-btn"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg></div>
+                </div>
+                <div class="fund-card-mid"><span class="k-amount">£285</span><span class="k-amount-sub">left of £400</span></div>
+                <div class="k-bar k-bar-muted"><i style="clip-path: inset(0 29% 0 0 round 5px)"></i></div>
+              </div>
+
+              <div class="k-card fund-card" id="fund-card">
+                <div id="fund-card-wash" class="k-wash" style="border-radius: inherit"></div>
+                <div class="fund-card-top">
+                  <span class="k-card-title">Holiday Fund</span><span class="k-chip k-chip-accent">Save</span>
+                  <div class="k-icon-btn" id="fund-more">
+                    <div id="fund-more-hover" class="k-hover"></div>
+                    <svg viewBox="0 0 24 24" fill="currentColor" style="position: relative"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg>
+                  </div>
+                </div>
+                <div class="fund-card-mid">
+                  <span class="k-amount" id="fund-amt">£650</span>
+                  <span class="k-amount-sub">/ £2,000 · <span id="fund-pct">33%</span></span>
+                </div>
+                <div class="k-bar"><i id="fund-fill"></i></div>
+              </div>
+
+              <div class="k-card fund-card">
+                <div class="fund-card-top">
+                  <span class="k-card-title">Transport</span><span class="k-chip">Spend</span>
+                  <div class="k-icon-btn"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg></div>
+                </div>
+                <div class="fund-card-mid"><span class="k-amount">£48</span><span class="k-amount-sub">left of £200</span></div>
+                <div class="k-bar k-bar-muted"><i style="clip-path: inset(0 24% 0 0 round 5px)"></i></div>
+              </div>
+
+              <div class="k-card fund-card">
+                <div class="fund-card-top">
+                  <span class="k-card-title">Emergency fund</span><span class="k-chip k-chip-accent">Save</span>
+                  <div class="k-icon-btn"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.7" /><circle cx="12" cy="12" r="1.7" /><circle cx="19" cy="12" r="1.7" /></svg></div>
+                </div>
+                <div class="fund-card-mid"><span class="k-amount">£3,200</span><span class="k-amount-sub">/ £5,000 · 64%</span></div>
+                <div class="k-bar"><i style="clip-path: inset(0 36% 0 0 round 5px)"></i></div>
+              </div>
+            </div>
+
+            <div class="fund-adj">
+              <div class="k-label">Recent adjustments</div>
+              <div class="k-table">
+                <div class="k-row k-row-head k-label"><span>Budget</span><span>Action</span><span>Date</span><span class="k-end">Amount</span></div>
+                <div class="fund-adj-body">
+                  <div id="fund-adj-rows">
+                    <div class="k-row" style="border-top: 0"><span class="k-strong">Emergency fund</span><span class="k-muted">Add</span><span class="k-mono">28 FEB</span><span class="k-end k-pos">+£200</span></div>
+                    <div class="k-row"><span class="k-strong">Groceries</span><span class="k-muted">Withdraw</span><span class="k-mono">26 FEB</span><span class="k-end">-£60</span></div>
+                    <div class="k-row"><span class="k-strong">Holiday Fund</span><span class="k-muted">Add</span><span class="k-mono">14 FEB</span><span class="k-end k-pos">+£150</span></div>
+                  </div>
+                  <div class="k-row fund-adj-new" id="fund-adj-new">
+                    <div id="fund-adj-wash" class="k-wash"></div>
+                    <span class="k-strong" style="position: relative">Holiday Fund</span><span class="k-muted" style="position: relative">Add</span><span class="k-mono" style="position: relative">TODAY</span><span class="k-end k-pos" style="position: relative">+£250</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card menu -->
+        <div class="k-menu" id="fund-menu" data-layout-allow-occlusion>
+          <div class="k-menu-item" id="fund-menu-add"><div id="fund-menu-hover" class="k-hover"></div><span>Add funds</span></div>
+          <div class="k-menu-item"><span>Withdraw</span></div>
+          <div class="k-menu-item"><span>Edit</span></div>
+          <div class="k-menu-item"><span>Show history</span></div>
+        </div>
+
+        <!-- Add funds modal -->
+        <div class="k-scrim" id="fund-scrim" data-layout-allow-occlusion></div>
+        <div class="k-modal" id="fund-modal" style="top: 318px" data-layout-allow-occlusion>
+          <div>
+            <div class="k-modal-title">Add funds</div>
+            <div class="k-modal-sub">Holiday Fund · current balance £650.00</div>
+          </div>
+          <div class="k-field">
+            Amount to add
+            <div class="k-input">
+              <div class="k-ring" id="fund-ring"></div>
+              <span class="k-prefix">£</span><span id="fund-typed"></span><span class="k-caret" id="fund-caret"></span>
+            </div>
+          </div>
+          <div class="k-modal-foot">
+            <div class="k-btn k-btn-ghost">Cancel</div>
+            <div class="k-btn k-btn-primary" id="fund-save">Add funds</div>
+          </div>
+        </div>
+
+        <div class="k-cursor" id="fund-cursor">
+          <svg viewBox="0 0 44 44"><path d="M9 6l24 15.5-10.8 2.3L16.4 34z" fill="#0c1a14" stroke="#ffffff" stroke-width="2.4" stroke-linejoin="round" /></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var K = window.Kit;
+      var DUR = 9.6;
+
+      function build() {
+        var cam = document.getElementById("fund-cam");
+        var cursor = "#fund-cursor";
+
+        // Measure once, before any tween exists.
+        var more = K.point("#fund-more", cam);
+        var moreBox = K.box("#fund-more", cam);
+        var menu = document.getElementById("fund-menu");
+        menu.style.left = moreBox.x + moreBox.w - 260 + "px";
+        menu.style.top = moreBox.y + moreBox.h + 8 + "px";
+        var menuAdd = K.point("#fund-menu-add", cam, 0.42, 0.55);
+        var save = K.point("#fund-save", cam, 0.55, 0.55);
+        var modal = K.point("#fund-modal", cam);
+
+        var tl = gsap.timeline({ paused: true });
+
+        // Resting state
+        K.open(tl, cam);
+        K.hidden(["#fund-menu", "#fund-scrim", "#fund-modal", "#fund-more-hover", "#fund-menu-hover", "#fund-ring", "#fund-caret", "#fund-card-wash", "#fund-adj-new", "#fund-adj-wash"]);
+        K.cursorSet(cursor, { x: 1210, y: 800 });
+        K.bar(tl, "#fund-fill", 0.325, 0.325, 0, 0.01);
+
+        // 1. Open the card menu
+        K.cursorTo(tl, cursor, more, 0.55, 0.8);
+        K.fade(tl, "#fund-more-hover", 0, 1, 1.2, 0.15);
+        K.press(tl, cursor, "#fund-more", 1.45);
+        K.show(tl, "#fund-menu", 1.55, { scale: 0.94, y: -6, dur: 0.28 });
+
+        // 2. Choose "Add funds"
+        K.cursorTo(tl, cursor, menuAdd, 1.95, 0.4);
+        K.fade(tl, "#fund-menu-hover", 0, 1, 2.2, 0.12);
+        K.press(tl, cursor, null, 2.55);
+        K.hide(tl, "#fund-menu", 2.66, { y: -4 });
+        tl.to("#fund-more-hover", { opacity: 0, duration: 0.15 }, 2.66);
+
+        // 3. Modal opens, camera leans in, the amount types itself
+        K.fade(tl, "#fund-scrim", 0, 1, 2.7, 0.3);
+        K.show(tl, "#fund-modal", 2.76, { dur: 0.4 });
+        K.camTo(tl, cam, modal, 1.14, 2.76, 1.0);
+        K.focus(tl, "#fund-ring", 3.05);
+        K.caret(tl, "#fund-caret", 3.1, 5.1);
+        K.type(tl, "#fund-typed", "250", 3.55, { cps: 5.5 });
+
+        // 4. Confirm
+        K.cursorTo(tl, cursor, save, 4.3, 0.65);
+        K.press(tl, cursor, "#fund-save", 5.05);
+        K.hide(tl, "#fund-modal", 5.18);
+        K.blur(tl, "#fund-ring", 5.18);
+        tl.to("#fund-scrim", { opacity: 0, duration: 0.3, ease: "power2.out" }, 5.18);
+        K.camReset(tl, cam, 5.2, 0.9);
+
+        // 5. The result: the bar fills, the balance counts, a row lands
+        K.bar(tl, "#fund-fill", 0.325, 0.45, 5.6, 1.1);
+        K.count(tl, "#fund-amt", 650, 900, 5.6, 1.1, function (v) { return K.money(v, { decimals: "never" }); });
+        K.count(tl, "#fund-pct", 33, 45, 5.6, 1.1, function (v) { return Math.round(v) + "%"; });
+        tl.fromTo("#fund-card-wash", { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" }, 5.6);
+        tl.to("#fund-card-wash", { opacity: 0, duration: 1.2, ease: "power2.inOut" }, 5.95);
+
+        tl.fromTo("#fund-adj-rows", { y: 0 }, { y: 62, duration: 0.6, ease: "expo.out" }, 5.95);
+        tl.fromTo("#fund-adj-new", { opacity: 0, y: -14 }, { opacity: 1, y: 0, duration: 0.5, ease: "expo.out" }, 6.02);
+        tl.fromTo("#fund-adj-wash", { opacity: 0 }, { opacity: 1, duration: 0.2 }, 6.02);
+        tl.to("#fund-adj-wash", { opacity: 0, duration: 1.4, ease: "power2.inOut" }, 6.5);
+
+        K.cursorTo(tl, cursor, { x: 1150, y: 600 }, 5.5, 1.0);
+
+        // 6. Hold, then hand back to the loop
+        K.close(tl, cam, DUR);
+        tl.set({}, {}, DUR);
+
+        window.__timelines["fund"] = tl;
+      }
+
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(build);
+      else build();
+    })();
+  </script>
+</template>
