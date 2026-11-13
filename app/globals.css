@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "../styles/tokens.css";
 
 button { cursor: pointer; }
 
@@ -86,6 +87,51 @@ button { cursor: pointer; }
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
 }
+/* ── Budgetly design tokens → Tailwind utilities ─────────────────────────────
+   Values live in styles/tokens.css. These follow the theme automatically:
+   bg-canvas, bg-surface, text-ink, text-ink-muted, border-line, bg-brand … */
+@theme inline {
+  --color-canvas: var(--bl-bg);
+  --color-sunk: var(--bl-bg-sunk);
+  --color-surface: var(--bl-surface);
+  --color-ink: var(--bl-fg);
+  --color-ink-muted: var(--bl-fg-muted);
+  --color-ink-faint: var(--bl-fg-faint);
+  --color-line: var(--bl-border);
+  --color-line-strong: var(--bl-border-strong);
+  --color-brand: var(--bl-accent);
+  --color-brand-ink: var(--bl-accent-fg);
+  --color-brand-soft: var(--bl-accent-soft);
+  --color-on-brand: var(--bl-on-accent);
+  --color-positive: var(--bl-positive);
+  --color-negative: var(--bl-negative);
+  --color-caution: var(--bl-warning);
+
+  --color-forest-950: var(--bl-forest-950);
+  --color-forest-900: var(--bl-forest-900);
+  --color-forest-800: var(--bl-forest-800);
+  --color-forest-700: var(--bl-forest-700);
+  --color-forest-600: var(--bl-forest-600);
+  --color-paper: var(--bl-paper);
+  --color-mint: var(--bl-mint);
+
+  --font-display: var(--bl-font-sans);
+  --font-ui: var(--bl-font-sans);
+  --font-figures: var(--bl-font-mono);
+
+  --radius-bl-sm: var(--bl-radius-sm);
+  --radius-bl-md: var(--bl-radius-md);
+  --radius-bl-lg: var(--bl-radius-lg);
+  --radius-bl-xl: var(--bl-radius-xl);
+
+  --shadow-bl-sm: var(--bl-shadow-sm);
+  --shadow-bl-md: var(--bl-shadow-md);
+  --shadow-bl-lg: var(--bl-shadow-lg);
+
+  --ease-bl-out: var(--bl-ease-out);
+  --ease-bl-in-out: var(--bl-ease-in-out);
+}
+
 /* ── Typography ─────────────────────────────────────────────────────────────── */
 
 #font-root {
