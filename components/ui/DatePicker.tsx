@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 type Props = {
@@ -18,7 +19,7 @@ const MONTHS = [
 function formatDisplay(value: string): string {
   if (!value) return 'Select date'
   const [y, m, d] = value.split('-').map(Number)
-  return `${MONTHS[m - 1]} ${d}, ${y}`
+  return `${d} ${MONTHS[m - 1]} ${y}`
 }
 
 function todayStr(): string {
@@ -116,78 +117,40 @@ export function DatePicker({ value, onChange, error }: Props) {
       <button
         type="button"
         onClick={() => setIsOpen(prev => !prev)}
-        className={cn(
-          'flex w-full items-center justify-between rounded-xl border border-gray-200 px-3 py-2 text-left text-gray-800 shadow-sm transition outline-none',
-          'focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100',
-          'dark:border-white/10 dark:bg-white/8 dark:text-slate-200',
-          isOpen && 'border-emerald-400 ring-2 ring-emerald-100 dark:border-emerald-500/50 dark:ring-emerald-500/20',
-          error && !isOpen && 'border-red-500 dark:border-red-500/70',
-        )}
+        className="bl-input"
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-invalid={!!error && !isOpen}
       >
-        <span className={cn('text-sm', !value && 'text-gray-400 dark:text-slate-500')}>
-          {formatDisplay(value)}
-        </span>
-        <svg
-          className={cn('h-4 w-4 text-gray-400 transition-transform dark:text-slate-500', isOpen && 'rotate-180')}
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-            clipRule="evenodd"
-          />
-        </svg>
+        <span className={cn('truncate', !value && 'bl-placeholder')}>{formatDisplay(value)}</span>
+        <ChevronDown aria-hidden="true" />
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 z-50 mt-1 w-72 rounded-xl border border-gray-200 bg-white p-3 shadow-lg ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0e2318] dark:ring-white/5">
+        <div className="bl-menu top-full left-0 mt-1.5 w-72 min-w-0 p-3" role="dialog" aria-label="Choose date">
           {/* Month navigation */}
-          <div className="mb-3 flex items-center justify-between">
-            <button
-              type="button"
-              onClick={prevMonth}
-              className="rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200"
-              aria-label="Previous month"
-            >
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
+          <div className="mb-2 flex items-center justify-between">
+            <button type="button" onClick={prevMonth} className="bl-icon-btn size-8" aria-label="Previous month">
+              <ChevronLeft aria-hidden="true" />
             </button>
-            <span className="text-sm font-semibold text-gray-800 dark:text-slate-200">
+            <span className="text-sm font-medium">
               {MONTHS[viewMonth]} {viewYear}
             </span>
             <button
               type="button"
               onClick={nextMonth}
               disabled={!canGoNext}
-              className={cn(
-                'rounded-lg p-1.5 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-slate-200',
-                !canGoNext && 'cursor-not-allowed opacity-30 hover:bg-transparent dark:hover:bg-transparent',
-              )}
+              className="bl-icon-btn size-8"
               aria-label="Next month"
             >
-              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path
-                  fillRule="evenodd"
-                  d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <ChevronRight aria-hidden="true" />
             </button>
           </div>
 
           {/* Day-of-week headers */}
           <div className="mb-1 grid grid-cols-7 gap-0.5">
             {DAYS.map(d => (
-              <div
-                key={d}
-                className="text-center text-xs font-medium text-gray-400 dark:text-slate-500"
-              >
+              <div key={d} className="bl-meta py-1 text-center text-[0.625rem]">
                 {d}
               </div>
             ))}
@@ -206,21 +169,16 @@ export function DatePicker({ value, onChange, error }: Props) {
                   key={day}
                   type="button"
                   disabled={isFuture}
+                  aria-pressed={isSelected}
                   onClick={() => {
                     onChange(dateStr)
                     setIsOpen(false)
                   }}
                   className={cn(
-                    'flex h-8 w-full items-center justify-center rounded-lg text-sm transition',
-                    isFuture
-                      ? 'cursor-not-allowed text-gray-300 dark:text-slate-700'
-                      : 'cursor-pointer hover:bg-emerald-50 hover:text-emerald-700 dark:hover:bg-emerald-900/30 dark:hover:text-emerald-300',
-                    isSelected &&
-                      'bg-emerald-600 font-semibold text-white hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-700',
-                    isToday && !isSelected &&
-                      'font-semibold text-emerald-600 dark:text-emerald-400',
-                    !isSelected && !isToday && !isFuture &&
-                      'text-gray-700 dark:text-slate-300',
+                    'flex h-8 w-full items-center justify-center rounded-bl-sm text-sm tabular-nums transition-colors',
+                    isFuture ? 'cursor-not-allowed text-ink-faint/50' : 'cursor-pointer hover:bg-sunk',
+                    isSelected && 'bg-ink font-medium text-canvas hover:bg-ink',
+                    isToday && !isSelected && 'font-semibold text-brand-ink',
                   )}
                 >
                   {day}
@@ -230,14 +188,14 @@ export function DatePicker({ value, onChange, error }: Props) {
           </div>
 
           {/* Today shortcut */}
-          <div className="mt-3 border-t border-gray-100 pt-2 dark:border-white/5">
+          <div className="mt-2 border-t border-line pt-2">
             <button
               type="button"
               onClick={() => {
                 onChange(today)
                 setIsOpen(false)
               }}
-              className="w-full rounded-lg py-1.5 text-center text-xs font-medium text-emerald-600 transition hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-900/30"
+              className="bl-btn bl-btn--xs bl-btn--quiet w-full"
             >
               Today
             </button>

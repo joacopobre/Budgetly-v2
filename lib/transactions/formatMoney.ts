@@ -1,2 +1,4 @@
-export const formatMoney = (value: number) =>
-  `${value < 0 ? '-' : ''}$${Math.abs(value).toFixed(2)}`
+import { formatCurrency } from '@/lib/currency'
+
+/** Money as the app writes it. Formatting lives in lib/currency.ts. */
+export const formatMoney = (value: number) => formatCurrency(value)

@@ -1,30 +1,9 @@
 import localFont from "next/font/local";
+import { Geist_Mono } from "next/font/google";
 
-export const switzer = localFont({
-  src: [
-    {
-      path: "../public/fonts/Switzer_Complete/Fonts/WEB/fonts/Switzer-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Switzer_Complete/Fonts/WEB/fonts/Switzer-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Switzer_Complete/Fonts/WEB/fonts/Switzer-Bold.woff2",
-      weight: "700",
-      style: "normal",
-    },
-  ],
-
-  fallback: ["system-ui", "Segoe UI", "Roboto", "Helvetica", "Arial"],
-});
-
-/* ── Redesign typefaces ────────────────────────────────────────────────────────
-   Exposed as CSS variables and picked up by styles/tokens.css
-   (--bl-font-sans, --bl-font-mono). */
+/* Budgetly typefaces, exposed as CSS variables and picked up by
+   styles/tokens.css (--bl-font-sans, --bl-font-mono). Loaded once, in the
+   root layout, for the landing page, the auth pages and the app. */
 
 export const switzerVariable = localFont({
   src: "../public/fonts/Switzer_Complete/Fonts/WEB/fonts/Switzer-Variable.woff2",
@@ -34,3 +13,11 @@ export const switzerVariable = localFont({
   display: "swap",
   fallback: ["Helvetica Neue", "Helvetica", "Arial", "sans-serif"],
 });
+
+export const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+export const fontVariables = `${switzerVariable.variable} ${geistMono.variable}`;

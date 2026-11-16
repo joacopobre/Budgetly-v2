@@ -2,11 +2,12 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState, useContext } from 'react'
-import { ChevronDown, Plus, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronDown, Plus } from 'lucide-react'
 import { useOnboarding, TOUR_DONE_KEY } from '@/context/OnboardingContext'
 import { filterByDateRange, type TrendRange } from '@/lib/transactions/filterByDateRange'
 import { calculateDashboardStats } from '@/lib/transactions/calculateDashboardStats'
 import { formatMoney } from '@/lib/transactions/formatMoney'
+import { formatCurrency } from '@/lib/currency'
 import { buildTrendSeries } from '@/lib/transactions/buildTrendSeries'
 import { TrendChart } from '@/components/dashboard/TrendChart'
 import { RecentTransactions } from '@/components/dashboard/RecentTransactions'
@@ -93,6 +94,11 @@ export default function DashboardClient({ initialTransactions, initialBudgets }:
         100
       : null
 
+  // Net worth card: where the line ends, and how far it moved over the range
+  const netWorthNow = netWorthSeries.length > 0 ? netWorthSeries[netWorthSeries.length - 1].balance : null
+  const netWorthChange =
+    netWorthSeries.length > 1 ? netWorthSeries[netWorthSeries.length - 1].balance - netWorthSeries[0].balance : null
+
   const handleClick = () => setIsOpen(prev => !prev)
   const applyFilter = (filter: TrendRange) => {
     setTrendFilter(filter)
@@ -114,46 +120,38 @@ export default function DashboardClient({ initialTransactions, initialBudgets }:
   }, [isOpen])
 
   return (
-    <div className="mx-auto flex w-full max-w-screen-xl flex-col gap-8 overflow-x-hidden px-5 pt-8 pb-14 md:px-8 lg:px-12">
+    <main className="bl-container bl-page">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white md:text-5xl lg:text-6xl">
-          Dashboard
-        </h1>
+      <div className="bl-head bl-rise">
+        <h1 className="bl-h1">Dashboard</h1>
         <Link
           href="/transactions"
           data-tour="add-transaction"
-          className="inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(16,185,129,0.35)] transition hover:from-emerald-600 hover:to-teal-600 hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)]"
+          className="bl-btn bl-btn--sm bl-btn--primary"
         >
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">Add transaction</span>
+          <Plus aria-hidden="true" />
+          Add transaction
         </Link>
       </div>
 
-      {/* 4 Stat Cards */}
-      <section data-tour="dashboard-stats" className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {/* Total Balance */}
-        <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-[#0d2118]/8 bg-white px-5 py-5 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            Total Balance
-          </p>
-          <p className="mt-1 text-2xl font-bold text-slate-900 dark:text-white lg:text-3xl">
-            {formatMoney(allTimeBalance)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            {formatMoney(availableBalance)} available &middot; {formatMoney(inBudgets)} in budgets
+      {/* Stat cards */}
+      <section
+        data-tour="dashboard-stats"
+        className="bl-rise grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 lg:grid-cols-4"
+        style={{ '--i': 1 } as React.CSSProperties}
+      >
+        <div className="bl-card bl-card--pad flex flex-col gap-3">
+          <p className="bl-eyebrow">Total balance</p>
+          <p className="bl-amount">{formatMoney(allTimeBalance)}</p>
+          <p className="text-sm text-ink-muted">
+            {formatMoney(availableBalance)} available · {formatMoney(inBudgets)} in budgets
           </p>
         </div>
 
-        {/* Monthly Income */}
-        <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-emerald-100 bg-emerald-50/50 px-5 py-5 shadow-sm dark:border-emerald-500/20 dark:bg-emerald-500/8 dark:backdrop-blur-md">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            Monthly Income
-          </p>
-          <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400 lg:text-3xl">
-            {formatMoney(thisMonthStats.totalIncome)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+        <div className="bl-card bl-card--pad flex flex-col gap-3">
+          <p className="bl-eyebrow">Income this month</p>
+          <p className="bl-amount text-positive">{formatMoney(thisMonthStats.totalIncome)}</p>
+          <p className="text-sm text-ink-muted">
             {savingsRate !== null
               ? savingsRate >= 0
                 ? `Saving ${savingsRate}% of income`
@@ -162,183 +160,179 @@ export default function DashboardClient({ initialTransactions, initialBudgets }:
           </p>
         </div>
 
-        {/* Monthly Spent */}
-        <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-[#dc2626]/15 bg-[#dc2626]/5 px-5 py-5 shadow-sm dark:border-[#dc2626]/20 dark:bg-[#dc2626]/8 dark:backdrop-blur-md">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            Monthly Spent
-          </p>
-          <p className="mt-1 text-2xl font-bold text-[#dc2626] dark:text-[#f87171] lg:text-3xl">
-            {formatMoney(thisMonthStats.totalExpenses)}
-          </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+        <div className="bl-card bl-card--pad flex flex-col gap-3">
+          <p className="bl-eyebrow">Spent this month</p>
+          <p className="bl-amount">{formatMoney(thisMonthStats.totalExpenses)}</p>
+          <p className="text-sm text-ink-muted">
             {spentDelta !== null
               ? `${spentDelta > 0 ? '+' : ''}${spentDelta.toFixed(1)}% vs last month`
               : 'No data last month'}
           </p>
         </div>
 
-        {/* Net Savings */}
-        <div className="flex flex-col gap-1 overflow-hidden rounded-2xl border border-[#0d2118]/8 bg-white px-5 py-5 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md">
-          <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-            Net Savings
-          </p>
-          <p
-            className={`mt-1 text-2xl font-bold lg:text-3xl ${
-              thisMonthStats.balance >= 0
-                ? 'text-slate-900 dark:text-white'
-                : 'text-[#dc2626] dark:text-[#f87171]'
-            }`}
-          >
+        <div className="bl-card bl-card--pad flex flex-col gap-3">
+          <p className="bl-eyebrow">Net savings</p>
+          <p className={`bl-amount ${thisMonthStats.balance < 0 ? 'text-negative' : ''}`}>
             {formatMoney(thisMonthStats.balance)}
           </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+          <p className="text-sm text-ink-muted">
             {thisMonthStats.balance >= 0 ? 'Positive this month' : 'Negative this month'}
           </p>
         </div>
       </section>
 
-      {/* Two-column layout */}
-      <div data-tour="dashboard-trend" className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
-        {/* Left: trend filter + chart + recent transactions */}
-        <div className="flex min-w-0 flex-col gap-4">
+      {/* Trends: the range sets both charts */}
+      <section
+        data-tour="dashboard-trend"
+        className="bl-rise flex flex-col gap-3"
+        style={{ '--i': 2 } as React.CSSProperties}
+      >
+        <div className="flex items-center justify-between gap-3">
+          <p className="bl-eyebrow">Trends</p>
           <div className="relative" ref={trendMenuRef}>
             <button
               type="button"
               onClick={handleClick}
-              className="flex items-center gap-2 rounded-full border border-[#0d2118]/10 bg-white px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:border-[#0d2118]/20 hover:bg-slate-50 dark:border-white/15 dark:bg-white/8 dark:text-slate-300 dark:hover:bg-white/12"
+              className="bl-input bl-input--sm w-auto"
+              aria-haspopup="listbox"
               aria-expanded={isOpen}
             >
               {trendFilter}
-              {isOpen ? <X className="size-4" /> : <ChevronDown className="size-4" />}
+              <ChevronDown aria-hidden="true" />
             </button>
             {isOpen && (
-              <div className="absolute left-0 z-10 mt-2 w-48 overflow-hidden rounded-2xl border border-[#0d2118]/8 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.08)] dark:border-white/10 dark:bg-[#0d2418]">
-                <ul className="flex flex-col text-sm font-medium text-slate-700">
-                  {(['This Month', 'Last 3 Months', 'This Year'] as const).map(opt => (
-                    <li key={opt} className="border-b border-slate-100 last:border-b-0 dark:border-white/8">
-                      <button
-                        type="button"
-                        className={`w-full px-4 py-2.5 text-left transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/8 ${trendFilter === opt ? 'font-semibold text-emerald-600 dark:text-emerald-400' : ''}`}
-                        onClick={() => applyFilter(opt)}
-                      >
-                        {opt}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+              <div className="bl-menu top-full right-0 mt-1.5 w-48 origin-top-right" role="listbox">
+                {(['This Month', 'Last 3 Months', 'This Year'] as const).map(opt => (
+                  <button
+                    key={opt}
+                    type="button"
+                    role="option"
+                    aria-selected={trendFilter === opt}
+                    className="bl-menu__item"
+                    onClick={() => applyFilter(opt)}
+                  >
+                    {opt}
+                    {trendFilter === opt && <Check aria-hidden="true" />}
+                  </button>
+                ))}
               </div>
             )}
           </div>
+        </div>
 
-          <div className="overflow-hidden rounded-2xl border border-[#0d2118]/8 bg-white px-5 py-6 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md">
+        <div className="grid gap-3 lg:grid-cols-[1.5fr_1fr]">
+          <div className="bl-card bl-card--pad min-w-0">
+            <div className="mb-5 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <h2 className="bl-card-title">Income and spending</h2>
+              <p className="bl-legend">
+                <span>
+                  <i />
+                  Income
+                </span>
+                <span>
+                  <i className="is-muted" />
+                  Spending
+                </span>
+              </p>
+            </div>
             <TrendChart data={trendSeries} />
           </div>
 
-          <div>
-            <div className="mb-2 flex items-center justify-between">
-              <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                Recent Transactions
-              </span>
-              <Link
-                href="/transactions"
-                className="text-xs font-semibold text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-              >
-                View all →
-              </Link>
+          <div className="bl-card bl-card--pad min-w-0">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="bl-card-title">Net worth</h2>
+              {netWorthChange !== null && (
+                <span className={`bl-chip ${netWorthChange >= 0 ? 'bl-chip--accent' : 'bl-chip--neg'}`}>
+                  {formatCurrency(netWorthChange, { signed: true, decimals: 'never' })}
+                </span>
+              )}
             </div>
-            <RecentTransactions transactions={initialTransactions} />
-          </div>
-        </div>
-
-        {/* Right: active budgets */}
-        <section className="flex min-w-0 flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-              Active Budgets
-            </p>
-            <Link
-              href="/budgets"
-              className="text-xs font-semibold text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-            >
-              View all →
-            </Link>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-[#0d2118]/8 bg-white px-4 pt-4 pb-4 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md">
-            {initialBudgets.length > 0 ? (
-              <div className="divide-y divide-slate-100 dark:divide-white/8">
-                {initialBudgets.slice(0, 5).map(budget => {
-                  const isSave = budget.kind === 'SAVE'
-                  const current = budget.balance
-                  const target = budget.target ?? 0
-                  const progress =
-                    isSave && target > 0
-                      ? Math.min(100, Math.round((current / target) * 100))
-                      : 0
-
-                  return (
-                    <div key={budget.id} className="flex flex-col gap-2 py-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex min-w-0 items-center gap-1.5">
-                          <span className="truncate text-sm font-medium text-slate-800 dark:text-slate-100">
-                            {budget.name}
-                          </span>
-                          <span
-                            className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${
-                              isSave
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                                : 'bg-slate-100 text-slate-500 dark:bg-white/8 dark:text-slate-400'
-                            }`}
-                          >
-                            {isSave ? 'Save' : 'Spend'}
-                          </span>
-                        </div>
-                        <span className="shrink-0 text-xs text-slate-500 dark:text-slate-400">
-                          {isSave
-                            ? `${formatMoney(current)} / ${formatMoney(target)}`
-                            : formatMoney(current)}
-                        </span>
-                      </div>
-                      <div className="h-1 w-full rounded-full bg-slate-100 dark:bg-white/10">
-                        <div
-                          className={`h-full rounded-full ${isSave ? 'bg-emerald-500' : 'bg-slate-400 dark:bg-slate-500'}`}
-                          style={{ width: isSave ? `${progress}%` : '100%' }}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            ) : (
-              <Link
-                href="/budgets"
-                className="group flex w-full flex-col items-center rounded-xl border border-dashed border-[#0d2118]/15 py-8 text-center transition hover:border-emerald-300 hover:bg-emerald-50/30 dark:border-white/10 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/8"
-              >
-                <div className="inline-flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-                  <Plus className="size-4" />
-                </div>
-                <p className="mt-3 text-sm font-semibold text-gray-800 transition group-hover:text-emerald-700 dark:text-slate-100 dark:group-hover:text-emerald-400">
-                  Create your first budget
-                </p>
-              </Link>
+            {netWorthNow !== null && (
+              <p className="bl-amount mb-4">{formatCurrency(netWorthNow, { decimals: 'never' })}</p>
             )}
-            <Link
-              href="/budgets"
-              className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-[#0d2118]/12 px-3 py-2 text-xs font-medium text-slate-500 transition hover:border-emerald-300 hover:bg-emerald-50/30 hover:text-emerald-700 dark:border-white/10 dark:text-slate-400 dark:hover:border-emerald-500/30 dark:hover:bg-emerald-500/8 dark:hover:text-emerald-400"
-            >
-              <Plus className="size-3" />
-              Add budget
-            </Link>
+            <NetWorthChart data={netWorthSeries} />
           </div>
-        </section>
-      </div>
-
-      {/* Net Worth — full width */}
-      <section>
-        <div className="rounded-2xl border border-[#0d2118]/8 bg-white px-5 py-6 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md md:px-6 md:py-7 lg:px-8 lg:py-8">
-          <NetWorthChart data={netWorthSeries} />
         </div>
       </section>
-    </div>
+
+      {/* Recent transactions and budgets */}
+      <div
+        className="bl-rise grid gap-3 lg:grid-cols-[1.5fr_1fr]"
+        style={{ '--i': 3 } as React.CSSProperties}
+      >
+        <section className="bl-card bl-card--pad min-w-0">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="bl-card-title">Recent transactions</h2>
+            <Link href="/transactions" className="bl-link inline-flex items-center gap-1 text-sm">
+              View all
+              <ArrowRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          </div>
+          <RecentTransactions transactions={initialTransactions} />
+        </section>
+
+        <section className="bl-card bl-card--pad flex min-w-0 flex-col">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <h2 className="bl-card-title">Budgets</h2>
+            <Link href="/budgets" className="bl-link inline-flex items-center gap-1 text-sm">
+              View all
+              <ArrowRight aria-hidden="true" className="size-3.5" />
+            </Link>
+          </div>
+
+          {initialBudgets.length > 0 ? (
+            <div className="bl-rule-list">
+              {initialBudgets.slice(0, 5).map(budget => {
+                const isSave = budget.kind === 'SAVE'
+                const current = budget.balance
+                const target = budget.target ?? 0
+                const progress =
+                  isSave && target > 0
+                    ? Math.min(100, Math.round((current / target) * 100))
+                    : 0
+
+                return (
+                  <div key={budget.id} className="flex flex-col gap-2.5 py-3.5">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="truncate text-[0.9375rem] font-medium">{budget.name}</span>
+                        <span className={`bl-chip ${isSave ? 'bl-chip--accent' : ''}`}>
+                          {isSave ? 'Save' : 'Spend'}
+                        </span>
+                      </div>
+                      <span className="shrink-0 text-sm text-ink-muted tabular-nums">
+                        {isSave ? (
+                          <>
+                            <span className="font-medium text-ink">{formatMoney(current)}</span> /{' '}
+                            {formatMoney(target)}
+                          </>
+                        ) : (
+                          <span className="font-medium text-ink">{formatMoney(current)}</span>
+                        )}
+                      </span>
+                    </div>
+                    <div className={`bl-bar ${isSave ? '' : 'bl-bar--muted'}`}>
+                      <i style={{ width: isSave ? `${progress}%` : '100%' }} />
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <Link href="/budgets" className="bl-empty mt-2 transition-colors hover:border-brand hover:text-ink">
+              <Plus aria-hidden="true" className="size-5" />
+              <span className="font-medium">Create your first budget</span>
+            </Link>
+          )}
+
+          {initialBudgets.length > 0 && (
+            <Link href="/budgets" className="bl-btn bl-btn--sm bl-btn--ghost mt-auto w-full">
+              <Plus aria-hidden="true" />
+              Add budget
+            </Link>
+          )}
+        </section>
+      </div>
+    </main>
   )
 }

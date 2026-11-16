@@ -3,14 +3,22 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { signOut } from 'next-auth/react'
-import { AlertTriangle, Bell, CheckCircle, Info, Map, Moon, Settings, Sun, X } from 'lucide-react'
-import { Plus_Jakarta_Sans } from 'next/font/google'
-import { useTheme } from '@/context/ThemeContext'
+import { signOut, useSession } from 'next-auth/react'
+import {
+  AlertTriangle,
+  Bell,
+  Check,
+  CheckCircle,
+  Info,
+  LogOut,
+  Map,
+  Menu,
+  Settings,
+  X,
+} from 'lucide-react'
 import { useOnboarding, TOUR_DONE_KEY } from '@/context/OnboardingContext'
+import ThemeSwitch from '@/components/landing/ThemeSwitch'
 import type { Notification } from '@/types/notifications'
-
-const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], weight: ['800'], display: 'swap' })
 
 const links = [
   { href: '/dashboard', label: 'Dashboard', tourTarget: 'nav-dashboard' },
@@ -29,22 +37,66 @@ function timeAgo(dateStr: string): string {
   return `${days}d ago`
 }
 
+function initialsOf(name?: string | null, email?: string | null): string {
+  const source = name?.trim() || email?.split('@')[0] || ''
+  const parts = source.split(/[\s._-]+/).filter(Boolean)
+  if (parts.length === 0) return '·'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
 function TypeIcon({ type }: { type: Notification['type'] }) {
-  if (type === 'WARNING')
-    return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />
-  if (type === 'SUCCESS')
-    return <CheckCircle className="mt-0.5 size-4 shrink-0 text-emerald-500" />
-  return <Info className="mt-0.5 size-4 shrink-0 text-sky-500" />
+  if (type === 'WARNING') return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-caution" />
+  if (type === 'SUCCESS') return <CheckCircle className="mt-0.5 size-4 shrink-0 text-positive" />
+  return <Info className="mt-0.5 size-4 shrink-0 text-ink-muted" />
+}
+
+/** Closes a popover on outside press or Escape. */
+function useDismiss(
+  open: boolean,
+  close: () => void,
+  refs: React.RefObject<HTMLElement | null>[],
+) {
+  useEffect(() => {
+    if (!open) return
+    const onClickAway = (e: MouseEvent | TouchEvent) => {
+      const target = e.target as Node
+      if (refs.some(ref => ref.current?.contains(target))) return
+      close()
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('mousedown', onClickAway)
+    document.addEventListener('touchstart', onClickAway)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onClickAway)
+      document.removeEventListener('touchstart', onClickAway)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
 }
 
 export default function AppNav() {
   const pathname = usePathname()
   const router = useRouter()
+  const { data: session } = useSession()
+  const { startTour } = useOnboarding()
+
   const [open, setOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
   const toggleRef = useRef<HTMLButtonElement>(null)
-  const { theme, toggleTheme } = useTheme()
-  const { startTour } = useOnboarding()
+
+  const [accountOpen, setAccountOpen] = useState(false)
+  const accountRef = useRef<HTMLDivElement>(null)
+
+  const [notifOpen, setNotifOpen] = useState(false)
+  const notifRef = useRef<HTMLDivElement>(null)
+  const [notifications, setNotifications] = useState<Notification[]>([])
+
+  const close = () => setOpen(false)
 
   const handleStartTour = () => {
     try {
@@ -55,14 +107,6 @@ export default function AppNav() {
       router.push('/dashboard')
     }
   }
-
-  const [notifOpen, setNotifOpen] = useState(false)
-  const notifRef = useRef<HTMLDivElement>(null)
-  const notifRefMobile = useRef<HTMLDivElement>(null)
-  const [notifications, setNotifications] = useState<Notification[]>([])
-
-  const toggle = () => setOpen(prev => !prev)
-  const close = () => setOpen(false)
 
   const unreadCount = notifications.filter(n => !n.read).length
 
@@ -87,167 +131,104 @@ export default function AppNav() {
     setNotifications(prev => prev.map(n => ({ ...n, read: true })))
   }
 
-  // Close mobile menu on click-away
-  useEffect(() => {
-    if (!open) return
-    const onClickAway = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node
-      if (toggleRef.current?.contains(target)) return
-      if (menuRef.current && !menuRef.current.contains(target)) close()
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') close()
-    }
-    document.addEventListener('mousedown', onClickAway)
-    document.addEventListener('touchstart', onClickAway)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onClickAway)
-      document.removeEventListener('touchstart', onClickAway)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [open])
+  useDismiss(open, close, [menuRef, toggleRef])
+  useDismiss(notifOpen, () => setNotifOpen(false), [notifRef])
+  useDismiss(accountOpen, () => setAccountOpen(false), [accountRef])
 
-  // Close notification panel on click-away
-  useEffect(() => {
-    if (!notifOpen) return
-    const onClickAway = (e: MouseEvent | TouchEvent) => {
-      const target = e.target as Node
-      const insideDesktop = notifRef.current?.contains(target)
-      const insideMobile = notifRefMobile.current?.contains(target)
-      if (!insideDesktop && !insideMobile) setNotifOpen(false)
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setNotifOpen(false)
-    }
-    document.addEventListener('mousedown', onClickAway)
-    document.addEventListener('touchstart', onClickAway)
-    document.addEventListener('keydown', onKeyDown)
-    return () => {
-      document.removeEventListener('mousedown', onClickAway)
-      document.removeEventListener('touchstart', onClickAway)
-      document.removeEventListener('keydown', onKeyDown)
-    }
-  }, [notifOpen])
+  const user = session?.user
+  const initials = initialsOf(user?.name, user?.email)
 
   return (
-    <header className="fixed inset-x-0 top-0 z-30 px-4 pt-3 md:px-6">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between rounded-2xl border border-white/60 bg-white/70 px-4 py-2 shadow-[0_8px_32px_rgba(15,23,42,0.08),inset_0_1px_0_rgba(255,255,255,0.9)] backdrop-blur-xl dark:border-white/12 dark:bg-[#061310]/60 dark:shadow-[0_8px_32px_rgba(0,0,0,0.4)] md:px-6">
-        <Link
-          href="/dashboard"
-          className={`${jakarta.className} text-xl tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80`}
-          style={{
-            background: 'linear-gradient(135deg, #059669 0%, #0d9488 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text',
-          }}
-        >
+    <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur-lg backdrop-saturate-150">
+      <div className="bl-container flex h-[60px] items-center gap-2">
+        <Link href="/dashboard" className="bl-logo mr-3 md:mr-7" aria-label="Budgetly dashboard">
+          <i aria-hidden="true" />
           Budgetly
         </Link>
 
-        <div className="relative hidden items-center gap-1 md:flex">
-          {links.map(link => {
-            const isActive = pathname === link.href
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                data-tour={link.tourTarget}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80 ${
-                  isActive
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-white/15 dark:text-white dark:ring-white/20'
-                    : 'text-slate-600 hover:bg-white/60 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
-                }`}
-                onClick={close}
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+          {links.map(link => (
+            <Link
+              key={link.href}
+              href={link.href}
+              data-tour={link.tourTarget}
+              aria-current={pathname === link.href ? 'page' : undefined}
+              className="bl-navlink"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-1.5">
+          {/* Notifications */}
+          <div className="relative" ref={notifRef}>
+            <button
+              type="button"
+              aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : 'Notifications'}
+              aria-expanded={notifOpen}
+              onClick={() => setNotifOpen(prev => !prev)}
+              className="bl-icon-btn"
+            >
+              <Bell aria-hidden="true" />
+              {unreadCount > 0 && (
+                <span className="bl-mono absolute -top-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[10px] leading-none font-medium text-on-brand ring-2 ring-canvas">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div
+                className="bl-menu top-full -right-12 mt-2 w-80 max-w-[calc(100vw-32px)] origin-top-right p-0 md:right-0"
+                style={{ minWidth: 0 }}
               >
-                {link.label}
-              </Link>
-            )
-          })}
-
-          {/* Notification bell */}
-          <div className="ml-1" ref={notifRef}>
-            <button
-              type="button"
-              aria-label="Notifications"
-              onClick={() => setNotifOpen(prev => !prev)}
-              className="relative flex size-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-            >
-              <Bell className="size-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
-            </button>
-
-            {notifOpen && (
-              <div className="absolute right-0 top-14 z-50 w-80 overflow-hidden rounded-2xl border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/12 dark:bg-[#0a1d17]/95 dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-white/8">
-                  <span className="text-sm font-semibold text-slate-800 dark:text-white">
-                    Notifications
-                  </span>
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-3 border-b border-line py-2.5 pr-2 pl-4">
+                  <span className="bl-eyebrow">Notifications</span>
+                  <div className="flex items-center gap-1">
                     {unreadCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={markAllRead}
-                        className="text-xs font-medium text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                      >
+                      <button type="button" onClick={markAllRead} className="bl-link px-1 text-xs">
                         Mark all as read
                       </button>
                     )}
                     <button
                       type="button"
+                      aria-label="Close notifications"
                       onClick={() => setNotifOpen(false)}
-                      className="flex size-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-white/10 dark:hover:text-white"
+                      className="bl-icon-btn size-7"
                     >
-                      <X className="size-3.5" />
+                      <X aria-hidden="true" className="size-4" />
                     </button>
                   </div>
                 </div>
 
-                {/* List */}
-                <div className="max-h-80 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                <div className="bl-rule-list max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+                    <p className="px-4 py-9 text-center text-sm text-ink-muted">
                       No notifications yet
                     </p>
                   ) : (
                     notifications.map(n => (
                       <div
                         key={n.id}
-                        className={`flex items-start gap-3 px-4 py-3 transition ${
-                          !n.read
-                            ? 'bg-emerald-50/60 dark:bg-emerald-900/20'
-                            : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                        }`}
+                        className={`flex items-start gap-3 px-4 py-3 ${n.read ? '' : 'bg-brand-soft'}`}
                       >
                         <TypeIcon type={n.type} />
                         <div className="min-w-0 flex-1">
-                          <p
-                            className={`text-sm leading-snug ${
-                              n.read
-                                ? 'text-slate-500 dark:text-slate-400'
-                                : 'text-slate-800 dark:text-slate-100'
-                            }`}
-                          >
+                          <p className={`text-sm leading-snug ${n.read ? 'text-ink-muted' : 'text-ink'}`}>
                             {n.message}
                           </p>
-                          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                            {timeAgo(n.createdAt)}
-                          </p>
+                          <p className="bl-meta mt-1 text-[0.6875rem]">{timeAgo(n.createdAt)}</p>
                         </div>
                         {!n.read && (
                           <button
                             type="button"
                             onClick={() => markRead(n.id)}
-                            className="shrink-0 text-xs font-medium text-slate-400 transition hover:text-emerald-600 dark:hover:text-emerald-400"
+                            className="bl-icon-btn -mt-1 -mr-1.5 size-7"
                             aria-label="Mark as read"
+                            title="Mark as read"
                           >
-                            ✓
+                            <Check aria-hidden="true" className="size-4" />
                           </button>
                         )}
                       </div>
@@ -258,218 +239,135 @@ export default function AppNav() {
             )}
           </div>
 
-          {/* Theme toggle */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleStartTour}
-            title="Take the tour"
-            aria-label="Take the tour"
-            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            <Map className="size-4" />
-          </button>
-
-          <Link
-            href="/settings"
-            aria-label="Account settings"
-            title="Account settings"
-            className={`flex size-9 items-center justify-center rounded-full transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80 ${
-              pathname === '/settings'
-                ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-white/15 dark:text-white dark:ring-white/20'
-                : 'text-slate-500 hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-white/10 dark:hover:text-white'
-            }`}
-          >
-            <Settings className="size-4" />
-          </Link>
-
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="ml-1 rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:bg-white hover:text-slate-900 dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-          >
-            Sign out
-          </button>
-        </div>
-
-        <div className="relative flex items-center gap-2 md:hidden">
-          {/* Notification bell mobile */}
-          <div ref={notifRefMobile}>
+          {/* Account (desktop) */}
+          <div className="relative hidden md:block" ref={accountRef}>
             <button
               type="button"
-              aria-label="Notifications"
-              onClick={() => setNotifOpen(prev => !prev)}
-              className="relative flex size-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+              aria-label="Account menu"
+              aria-expanded={accountOpen}
+              onClick={() => setAccountOpen(prev => !prev)}
+              className="ml-1 grid size-8 place-items-center rounded-full bg-forest-800 text-[0.6875rem] font-semibold tracking-wide text-paper transition-shadow hover:ring-4 hover:ring-brand-soft aria-expanded:ring-4 aria-expanded:ring-brand-soft dark:border dark:border-line-strong"
             >
-              <Bell className="size-4" />
-              {unreadCount > 0 && (
-                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
-              )}
+              {initials}
             </button>
 
-            {notifOpen && (
-              <div className="absolute right-0 top-14 z-50 w-72 overflow-hidden rounded-2xl border border-white/60 bg-white/95 shadow-[0_16px_48px_rgba(15,23,42,0.12)] backdrop-blur-xl dark:border-white/12 dark:bg-[#0a1d17]/95 dark:shadow-[0_16px_48px_rgba(0,0,0,0.5)]">
-                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-white/8">
-                  <span className="text-sm font-semibold text-slate-800 dark:text-white">
-                    Notifications
-                  </span>
-                  <div className="flex items-center gap-2">
-                    {unreadCount > 0 && (
-                      <button
-                        type="button"
-                        onClick={markAllRead}
-                        className="text-xs font-medium text-emerald-600 transition hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300"
-                      >
-                        Mark all as read
-                      </button>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setNotifOpen(false)}
-                      className="flex size-6 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 dark:hover:bg-white/10"
-                    >
-                      <X className="size-3.5" />
-                    </button>
-                  </div>
+            {accountOpen && (
+              <div className="bl-menu top-full right-0 mt-2 w-64 origin-top-right" style={{ minWidth: 0 }}>
+                {user && (
+                  <>
+                    <div className="px-[11px] pt-1.5 pb-2">
+                      {user.name && <p className="truncate text-sm font-medium">{user.name}</p>}
+                      {user.email && <p className="truncate text-sm text-ink-muted">{user.email}</p>}
+                    </div>
+                    <div className="bl-menu__rule" />
+                  </>
+                )}
+                <Link
+                  href="/settings"
+                  className="bl-menu__item bl-menu__item--icon"
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <Settings aria-hidden="true" />
+                  Account settings
+                </Link>
+                <button
+                  type="button"
+                  className="bl-menu__item bl-menu__item--icon"
+                  onClick={() => {
+                    setAccountOpen(false)
+                    handleStartTour()
+                  }}
+                >
+                  <Map aria-hidden="true" />
+                  Take the tour
+                </button>
+                <div className="bl-menu__rule" />
+                <div className="flex items-center justify-between gap-3 py-1 pr-1 pl-[11px]">
+                  <span className="text-[0.9375rem]">Theme</span>
+                  <ThemeSwitch />
                 </div>
-                <div className="max-h-72 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-                  {notifications.length === 0 ? (
-                    <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
-                      No notifications yet
-                    </p>
-                  ) : (
-                    notifications.map(n => (
-                      <div
-                        key={n.id}
-                        className={`flex items-start gap-3 px-4 py-3 transition ${
-                          !n.read
-                            ? 'bg-emerald-50/60 dark:bg-emerald-900/20'
-                            : 'hover:bg-slate-50 dark:hover:bg-white/5'
-                        }`}
-                      >
-                        <TypeIcon type={n.type} />
-                        <div className="min-w-0 flex-1">
-                          <p
-                            className={`text-sm leading-snug ${
-                              n.read
-                                ? 'text-slate-500 dark:text-slate-400'
-                                : 'text-slate-800 dark:text-slate-100'
-                            }`}
-                          >
-                            {n.message}
-                          </p>
-                          <p className="mt-0.5 text-xs text-slate-400 dark:text-slate-500">
-                            {timeAgo(n.createdAt)}
-                          </p>
-                        </div>
-                        {!n.read && (
-                          <button
-                            type="button"
-                            onClick={() => markRead(n.id)}
-                            className="shrink-0 text-xs font-medium text-slate-400 transition hover:text-emerald-600 dark:hover:text-emerald-400"
-                            aria-label="Mark as read"
-                          >
-                            ✓
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
+                <div className="bl-menu__rule" />
+                <button
+                  type="button"
+                  className="bl-menu__item bl-menu__item--icon"
+                  onClick={() => signOut({ callbackUrl: '/login' })}
+                >
+                  <LogOut aria-hidden="true" />
+                  Sign out
+                </button>
               </div>
             )}
           </div>
 
-          {/* Theme toggle mobile */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="flex size-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
-          >
-            {theme === 'dark' ? <Sun className="size-4" /> : <Moon className="size-4" />}
-          </button>
-
+          {/* Menu (mobile) */}
           <button
             ref={toggleRef}
             type="button"
             aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-            onClick={toggle}
-            className="flex items-center rounded-xl border border-white/60 bg-white/60 p-2 text-slate-700 shadow-sm transition hover:bg-white dark:border-white/15 dark:bg-white/8 dark:text-slate-200 dark:hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300/80"
+            aria-expanded={open}
+            aria-controls="app-menu"
+            onClick={() => setOpen(prev => !prev)}
+            className="bl-icon-btn md:hidden"
           >
-            <span className="sr-only">Toggle menu</span>
-            {open ? (
-              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M6 6l12 12M6 18L18 6" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden="true">
-                <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
+            {open ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
           </button>
         </div>
-      </nav>
+      </div>
 
       {open && (
         <div
+          id="app-menu"
           ref={menuRef}
-          className="mx-auto mt-2 flex max-w-7xl flex-col gap-1 rounded-2xl border border-white/60 bg-white/90 px-4 py-3 shadow-[0_8px_32px_rgba(15,23,42,0.1)] backdrop-blur-xl dark:border-white/12 dark:bg-[#0a1d17]/90 md:hidden"
+          className="absolute inset-x-0 top-full border-b border-line bg-canvas shadow-bl-md md:hidden"
         >
-          {links.map(link => {
-            const isActive = pathname === link.href
-            return (
+          <div className="bl-container flex flex-col gap-1 py-3">
+            {links.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-xl px-4 py-2.5 text-sm font-medium transition ${
-                  isActive
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-white/15 dark:text-white dark:ring-white/20'
-                    : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
-                }`}
+                aria-current={pathname === link.href ? 'page' : undefined}
+                className="bl-navlink py-2.5"
                 onClick={close}
               >
                 {link.label}
               </Link>
-            )
-          })}
-          <button
-            type="button"
-            onClick={() => { close(); handleStartTour() }}
-            className="mt-1 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-white/70 dark:text-slate-300 dark:hover:bg-white/10"
-          >
-            <Map className="size-4" />
-            Take the tour
-          </button>
-          <Link
-            href="/settings"
-            onClick={close}
-            className={`mt-1 flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition ${
-              pathname === '/settings'
-                ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-white/15 dark:text-white dark:ring-white/20'
-                : 'text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white'
-            }`}
-          >
-            <Settings className="size-4" />
-            Account settings
-          </Link>
-          <button
-            type="button"
-            onClick={() => signOut({ callbackUrl: '/login' })}
-            className="mt-1 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition hover:bg-white dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/10"
-          >
-            Sign out
-          </button>
+            ))}
+            <div className="my-2 h-px bg-line" />
+            <Link
+              href="/settings"
+              onClick={close}
+              aria-current={pathname === '/settings' ? 'page' : undefined}
+              className="bl-navlink flex items-center gap-2.5 py-2.5"
+            >
+              <Settings aria-hidden="true" className="size-4" />
+              Account settings
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                close()
+                handleStartTour()
+              }}
+              className="bl-navlink flex items-center gap-2.5 py-2.5 text-left"
+            >
+              <Map aria-hidden="true" className="size-4" />
+              Take the tour
+            </button>
+            <div className="flex items-center justify-between gap-3 py-2 pl-[13px]">
+              <span className="text-[0.9375rem] font-medium text-ink-muted">Theme</span>
+              <ThemeSwitch />
+            </div>
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/login' })}
+              className="bl-btn bl-btn--sm bl-btn--ghost mt-2"
+            >
+              Sign out
+            </button>
+            {user?.email && (
+              <p className="bl-meta mt-2 truncate text-center normal-case">{user.email}</p>
+            )}
+          </div>
         </div>
       )}
     </header>

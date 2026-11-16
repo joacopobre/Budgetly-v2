@@ -7,7 +7,7 @@ import { CsvImportModal } from '@/components/transactions/CsvImportModal'
 import { TransactionsFilters } from '@/components/transactions/TransactionsFilters'
 import { TransactionsHeader } from '@/components/transactions/TransactionsHeader'
 import { TransactionsMobileList } from '@/components/transactions/TransactionsMobileList'
-import { TransactionsTable } from '@/components/transactions/TransactionsTable'
+import { TransactionsPagination, TransactionsTable } from '@/components/transactions/TransactionsTable'
 import { filterTransactions } from '@/lib/transactions/filterTransactions'
 import { formatMoney } from '@/lib/transactions/formatMoney'
 import type {
@@ -271,7 +271,7 @@ export default function TransactionsClient({ initialTransactions }: Props) {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col gap-8 px-5 py-10 pb-14 md:px-8 lg:px-12">
+    <main className="bl-container bl-page">
       <TransactionsHeader onAdd={() => openModal()} onImport={() => setIsImportModalOpen(true)} />
 
       <TransactionsFilters
@@ -307,6 +307,14 @@ export default function TransactionsClient({ initialTransactions }: Props) {
         onDelete={handleDeleteTransaction}
         formatMoney={formatMoney}
         getSourceLabel={getSourceLabel}
+      />
+
+      {/* The table carries its own pager; this one is for the mobile list. */}
+      <TransactionsPagination
+        totalCount={filteredTransactions.length}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        className="-mt-2 md:hidden"
       />
 
       <CsvImportModal

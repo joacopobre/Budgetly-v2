@@ -3,7 +3,9 @@
 import { useContext, useEffect, useRef, useState } from 'react'
 import type { RecurrenceFrequency, TxSource, TxType } from '@/types/transactions'
 import { BudgetsContext } from '@/context/BudgetsContext'
+import { Check, ChevronDown, Plus, X } from 'lucide-react'
 import { DatePicker } from '@/components/ui/DatePicker'
+import { DEFAULT_CURRENCY } from '@/lib/currency'
 
 type Props = {
   isOpen: boolean
@@ -32,6 +34,14 @@ type Props = {
 }
 
 const typeOptions: TxType[] = ['Expense', 'Income']
+
+const sentenceCase = (value: string) => value.charAt(0).toUpperCase() + value.slice(1).toLowerCase()
+
+const Required = () => (
+  <span className="text-negative" aria-hidden="true">
+    *
+  </span>
+)
 
 const recurrenceOptions: { value: RecurrenceFrequency; label: string }[] = [
   { value: 'DAILY', label: 'Daily' },
@@ -159,362 +169,340 @@ export function TransactionModal({
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-start justify-center overflow-y-auto bg-black/50 px-4 pt-20 pb-8 backdrop-blur-sm sm:items-center sm:pt-4 sm:pb-4"
-      onClick={onClose}
-    >
+    <div className="bl-scrim" onClick={onClose}>
       <div
-        className="mx-4 flex w-full max-w-lg flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-white/10 dark:bg-[#0e2318]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tx-modal-title"
+        className="bl-modal max-w-[540px]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="bl-modal__head">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 id="tx-modal-title" className="bl-modal__title">
               {editingId ? 'Edit transaction' : 'Add transaction'}
             </h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Enter details for this transaction.
-            </p>
+            <p className="bl-modal__sub">Enter details for this transaction.</p>
           </div>
-          <button
-            type="button"
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-300"
-            onClick={onClose}
-            aria-label="Close modal"
-          >
-            ✕
+          <button type="button" className="bl-icon-btn" onClick={onClose} aria-label="Close modal">
+            <X aria-hidden="true" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            <span>Date <span className="text-red-500">*</span></span>
-            <DatePicker
-              value={date}
-              onChange={v => { setDate(v); setErrors(prev => ({ ...prev, date: undefined })) }}
-              error={!!errors.date}
-            />
-            {errors.date && <p className="text-xs text-red-500">{errors.date}</p>}
-          </div>
-          <div
-            className="relative flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-            ref={typeMenuRef}
-          >
-            <span>Type <span className="text-red-500">*</span></span>
-            <button
-              type="button"
-              onClick={() => setIsTypeMenuOpen(prev => !prev)}
-              className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200"
-            >
-              {type}
-              <span className="text-xs text-gray-500 dark:text-gray-400">▼</span>
-            </button>
-
-            {isTypeMenuOpen && (
-              <div className="absolute top-full right-0 left-0 z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0e2318] dark:ring-white/5">
-                {typeOptions.map(option => (
-                  <button
-                    key={option}
-                    type="button"
-                    className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-white/10 ${
-                      option === type ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                    onClick={() => {
-                      setType(option)
-                      setIsTypeMenuOpen(false)
-                      if (option === 'Income') {
-                        setSource('ACCOUNT')
-                        setBudgetId(null)
-                      }
-                    }}
-                  >
-                    {option}
-                    {option === type && <span className="text-emerald-600 dark:text-emerald-400">✓</span>}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <label
-            className="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-            htmlFor="description"
-          >
-            <span>Description <span className="text-red-500">*</span></span>
+        <div className="flex flex-col gap-4">
+          <label className="bl-field" htmlFor="description">
+            <span>
+              Description <Required />
+            </span>
             <input
               id="description"
               type="text"
               value={description}
               onChange={e => { setDescription(e.target.value); setErrors(prev => ({ ...prev, description: undefined })) }}
-              className={`rounded-xl border px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:bg-white/8 dark:text-slate-200 ${errors.description ? 'border-red-500 dark:border-red-500/70' : 'border-gray-200 dark:border-white/10'}`}
+              className="bl-input"
+              aria-invalid={!!errors.description}
               placeholder="e.g. Coffee"
             />
-            {errors.description && <p className="text-xs text-red-500">{errors.description}</p>}
+            {errors.description && <p className="bl-field__error">{errors.description}</p>}
           </label>
-          <div
-            className="relative flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-            ref={categoryMenuRef}
-          >
-            <span>Category <span className="text-red-500">*</span></span>
-            <button
-              type="button"
-              onClick={() => {
-                setIsCategoryMenuOpen(prev => !prev)
-                setCategorySearch('')
-                setTimeout(() => categoryInputRef.current?.focus(), 0)
-              }}
-              className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:bg-white/8 dark:text-slate-200 ${errors.category ? 'border-red-500 dark:border-red-500/70' : 'border-gray-200 dark:border-white/10'}`}
-            >
-              <span className={category ? '' : 'text-gray-400 dark:text-gray-500'}>
-                {category
-                  ? category.charAt(0).toUpperCase() + category.slice(1).toLowerCase()
-                  : 'e.g. Food'}
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="bl-field relative" ref={categoryMenuRef}>
+              <span>
+                Category <Required />
               </span>
-              <span className="text-xs text-gray-500 dark:text-gray-400">▼</span>
-            </button>
-
-            {isCategoryMenuOpen && (
-              <div className="absolute top-full right-0 left-0 z-50 mt-1 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0e2318] dark:ring-white/5">
-                <div className="border-b border-gray-100 p-2 dark:border-white/10">
-                  <input
-                    ref={categoryInputRef}
-                    type="text"
-                    value={categorySearch}
-                    onChange={e => setCategorySearch(e.target.value)}
-                    placeholder="Search or create..."
-                    className="w-full rounded-lg px-2 py-1 text-sm text-gray-800 outline-none placeholder:text-gray-400 dark:bg-white/8 dark:text-slate-200 dark:placeholder:text-gray-500"
-                  />
-                </div>
-                <div className="max-h-48 overflow-y-auto">
-                  {categories
-                    .filter(c => c.toLowerCase().includes(categorySearch.toLowerCase()))
-                    .map(c => (
-                      <button
-                        key={c}
-                        type="button"
-                        className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-white/10 ${
-                          c === category
-                            ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                            : 'text-gray-700 dark:text-gray-300'
-                        }`}
-                        onClick={() => {
-                          setCategory(c)
-                          setIsCategoryMenuOpen(false)
-                          setCategorySearch('')
-                        }}
-                      >
-                        {c.charAt(0).toUpperCase() + c.slice(1).toLowerCase()}
-                        {c === category && (
-                          <span className="text-emerald-600 dark:text-emerald-400">✓</span>
-                        )}
-                      </button>
-                    ))}
-                  {categorySearch.trim() &&
-                    !categories.some(
-                      c => c.toLowerCase() === categorySearch.trim().toLowerCase(),
-                    ) && (
-                      <button
-                        type="button"
-                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-emerald-600 transition hover:bg-gray-100 dark:text-emerald-400 dark:hover:bg-white/10"
-                        onClick={() => {
-                          setCategory(categorySearch.trim())
-                          setIsCategoryMenuOpen(false)
-                          setCategorySearch('')
-                        }}
-                      >
-                        <span className="font-semibold">+</span> Create new category:{' '}
-                        <span className="font-medium">&quot;{categorySearch.trim()}&quot;</span>
-                      </button>
-                    )}
-                  {categories.length === 0 && !categorySearch.trim() && (
-                    <p className="px-3 py-2 text-sm text-gray-400 dark:text-gray-500">
-                      Start typing to create a category
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            {errors.category && <p className="text-xs text-red-500">{errors.category}</p>}
-          </div>
-        </div>
-
-        <label
-          className="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-          htmlFor="amount"
-        >
-          <span>Amount <span className="text-red-500">*</span></span>
-          <input
-            id="amount"
-            type="number"
-            min="0"
-            value={amount}
-            onChange={e => { setAmount(e.target.value); setErrors(prev => ({ ...prev, amount: undefined })) }}
-            className={`rounded-xl border px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:bg-white/8 dark:text-slate-200 ${errors.amount ? 'border-red-500 dark:border-red-500/70' : 'border-gray-200 dark:border-white/10'}`}
-            placeholder="0.00"
-          />
-          {errors.amount && <p className="text-xs text-red-500">{errors.amount}</p>}
-        </label>
-
-        {type !== 'Income' && (
-        <div
-          className="relative flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-          ref={fromMenuRef}
-        >
-          <span>From <span className="text-red-500">*</span></span>
-          <button
-            type="button"
-            onClick={() => {
-              setIsFromMenuOpen(prev => !prev)
-            }}
-            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:bg-white/8 dark:text-slate-200 ${errors.from ? 'border-red-500 dark:border-red-500/70' : 'border-gray-200 dark:border-white/10'}`}
-          >
-            {source === 'ACCOUNT'
-              ? 'Account'
-              : spendBudgets.find(b => b.id === budgetId)?.name ?? 'Budget'}
-            <span className="text-xs text-gray-500 dark:text-gray-400">▼</span>
-          </button>
-
-          {isFromMenuOpen && (
-            <div className="absolute top-full right-0 left-0 z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0e2318] dark:ring-white/5">
               <button
                 type="button"
-                className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-white/10 ${
-                  source === 'ACCOUNT' ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-gray-700 dark:text-gray-300'
-                }`}
                 onClick={() => {
-                  setSource('ACCOUNT')
-                  setBudgetId(null)
-                  setIsFromMenuOpen(false)
+                  setIsCategoryMenuOpen(prev => !prev)
+                  setCategorySearch('')
+                  setTimeout(() => categoryInputRef.current?.focus(), 0)
                 }}
+                className="bl-input"
+                aria-haspopup="listbox"
+                aria-expanded={isCategoryMenuOpen}
+                aria-invalid={!!errors.category}
               >
-                Account
-                {source === 'ACCOUNT' && <span className="text-emerald-600 dark:text-emerald-400">✓</span>}
+                <span className={`truncate ${category ? '' : 'bl-placeholder'}`}>
+                  {category ? sentenceCase(category) : 'Choose…'}
+                </span>
+                <ChevronDown aria-hidden="true" />
               </button>
-              {spendBudgets.map(budget => (
-                <button
-                  key={budget.id}
-                  type="button"
-                  className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-white/10 ${
-                    source === 'BUDGET' && budgetId === budget.id
-                      ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}
-                  onClick={() => {
-                    setSource('BUDGET')
-                    setBudgetId(budget.id)
-                    setIsFromMenuOpen(false)
-                  }}
-                >
-                  {budget.name}
-                  {source === 'BUDGET' && budgetId === budget.id && (
-                    <span className="text-emerald-600 dark:text-emerald-400">✓</span>
-                  )}
-                </button>
-              ))}
-            </div>
-          )}
-          {errors.from && <p className="text-xs text-red-500">{errors.from}</p>}
-        </div>
-        )}
 
-        {/* Recurrence section */}
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Recurring</span>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={isRecurring}
-              onClick={() => setRecurrence(isRecurring ? 'NONE' : 'MONTHLY')}
-              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
-                isRecurring ? 'bg-emerald-500' : 'bg-gray-200 dark:bg-white/20'
-              }`}
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
-                  isRecurring ? 'translate-x-6' : 'translate-x-1'
-                }`}
-              />
-            </button>
+              {isCategoryMenuOpen && (
+                <div className="bl-menu top-full left-0 mt-1.5 p-0">
+                  <div className="border-b border-line p-1.5">
+                    <input
+                      ref={categoryInputRef}
+                      type="text"
+                      value={categorySearch}
+                      onChange={e => setCategorySearch(e.target.value)}
+                      placeholder="Search or create…"
+                      className="h-8 w-full rounded-bl-sm bg-transparent px-2 text-sm text-ink outline-none placeholder:text-ink-faint"
+                    />
+                  </div>
+                  <div className="flex max-h-48 flex-col overflow-y-auto p-1.5" role="listbox">
+                    {categories
+                      .filter(c => c.toLowerCase().includes(categorySearch.toLowerCase()))
+                      .map(c => (
+                        <button
+                          key={c}
+                          type="button"
+                          role="option"
+                          aria-selected={c === category}
+                          className="bl-menu__item"
+                          onClick={() => {
+                            setCategory(c)
+                            setIsCategoryMenuOpen(false)
+                            setCategorySearch('')
+                          }}
+                        >
+                          {sentenceCase(c)}
+                          {c === category && <Check aria-hidden="true" />}
+                        </button>
+                      ))}
+                    {categorySearch.trim() &&
+                      !categories.some(
+                        c => c.toLowerCase() === categorySearch.trim().toLowerCase(),
+                      ) && (
+                        <button
+                          type="button"
+                          className="bl-menu__item justify-start gap-2 text-brand-ink"
+                          onClick={() => {
+                            setCategory(categorySearch.trim())
+                            setIsCategoryMenuOpen(false)
+                            setCategorySearch('')
+                          }}
+                        >
+                          <Plus aria-hidden="true" />
+                          <span className="truncate">
+                            Create &quot;{categorySearch.trim()}&quot;
+                          </span>
+                        </button>
+                      )}
+                    {categories.length === 0 && !categorySearch.trim() && (
+                      <p className="px-[11px] py-2 text-sm text-ink-faint">
+                        Start typing to create a category
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+              {errors.category && <p className="bl-field__error">{errors.category}</p>}
+            </div>
+
+            <label className="bl-field" htmlFor="amount">
+              <span>
+                Amount <Required />
+              </span>
+              <span className="bl-affix">
+                <span aria-hidden="true">{DEFAULT_CURRENCY.symbol}</span>
+                <input
+                  id="amount"
+                  type="number"
+                  inputMode="decimal"
+                  min="0"
+                  value={amount}
+                  onChange={e => { setAmount(e.target.value); setErrors(prev => ({ ...prev, amount: undefined })) }}
+                  className="bl-input"
+                  aria-invalid={!!errors.amount}
+                  placeholder="0.00"
+                />
+              </span>
+              {errors.amount && <p className="bl-field__error">{errors.amount}</p>}
+            </label>
           </div>
 
-          {isRecurring && (
-            <div
-              className="relative flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-              ref={recurrenceMenuRef}
-            >
-              <span>Frequency</span>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="bl-field">
+              <span>
+                Date <Required />
+              </span>
+              <DatePicker
+                value={date}
+                onChange={v => { setDate(v); setErrors(prev => ({ ...prev, date: undefined })) }}
+                error={!!errors.date}
+              />
+              {errors.date && <p className="bl-field__error">{errors.date}</p>}
+            </div>
+
+            <div className="bl-field relative" ref={typeMenuRef}>
+              <span>
+                Type <Required />
+              </span>
               <button
                 type="button"
-                onClick={() => setIsRecurrenceMenuOpen(prev => !prev)}
-                className="flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200"
+                onClick={() => setIsTypeMenuOpen(prev => !prev)}
+                className="bl-input"
+                aria-haspopup="listbox"
+                aria-expanded={isTypeMenuOpen}
               >
-                {recurrenceOptions.find(o => o.value === recurrence)?.label ?? 'Monthly'}
-                <span className="text-xs text-gray-500 dark:text-gray-400">▼</span>
+                {type}
+                <ChevronDown aria-hidden="true" />
               </button>
 
-              {isRecurrenceMenuOpen && (
-                <div className="absolute top-full right-0 left-0 z-50 mt-1 w-full rounded-xl border border-gray-200 bg-white shadow-lg ring-1 ring-black/5 dark:border-white/10 dark:bg-[#0e2318] dark:ring-white/5">
-                  {recurrenceOptions.map(option => (
+              {isTypeMenuOpen && (
+                <div className="bl-menu top-full left-0 mt-1.5" role="listbox">
+                  {typeOptions.map(option => (
                     <button
-                      key={option.value}
+                      key={option}
                       type="button"
-                      className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-gray-100 dark:hover:bg-white/10 ${
-                        option.value === recurrence
-                          ? 'font-semibold text-emerald-600 dark:text-emerald-400'
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}
+                      role="option"
+                      aria-selected={option === type}
+                      className="bl-menu__item"
                       onClick={() => {
-                        setRecurrence(option.value)
-                        setIsRecurrenceMenuOpen(false)
+                        setType(option)
+                        setIsTypeMenuOpen(false)
+                        if (option === 'Income') {
+                          setSource('ACCOUNT')
+                          setBudgetId(null)
+                        }
                       }}
                     >
-                      {option.label}
-                      {option.value === recurrence && (
-                        <span className="text-emerald-600 dark:text-emerald-400">✓</span>
-                      )}
+                      {option}
+                      {option === type && <Check aria-hidden="true" />}
                     </button>
                   ))}
                 </div>
               )}
             </div>
+          </div>
+
+          {type !== 'Income' && (
+            <div className="bl-field relative" ref={fromMenuRef}>
+              <span>
+                From <Required />
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsFromMenuOpen(prev => !prev)
+                }}
+                className="bl-input"
+                aria-haspopup="listbox"
+                aria-expanded={isFromMenuOpen}
+                aria-invalid={!!errors.from}
+              >
+                {source === 'ACCOUNT'
+                  ? 'Account'
+                  : spendBudgets.find(b => b.id === budgetId)?.name ?? 'Budget'}
+                <ChevronDown aria-hidden="true" />
+              </button>
+
+              {isFromMenuOpen && (
+                <div className="bl-menu top-full left-0 mt-1.5 max-h-56 overflow-y-auto" role="listbox">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={source === 'ACCOUNT'}
+                    className="bl-menu__item"
+                    onClick={() => {
+                      setSource('ACCOUNT')
+                      setBudgetId(null)
+                      setIsFromMenuOpen(false)
+                    }}
+                  >
+                    Account
+                    {source === 'ACCOUNT' && <Check aria-hidden="true" />}
+                  </button>
+                  {spendBudgets.map(budget => (
+                    <button
+                      key={budget.id}
+                      type="button"
+                      role="option"
+                      aria-selected={source === 'BUDGET' && budgetId === budget.id}
+                      className="bl-menu__item"
+                      onClick={() => {
+                        setSource('BUDGET')
+                        setBudgetId(budget.id)
+                        setIsFromMenuOpen(false)
+                      }}
+                    >
+                      {budget.name}
+                      {source === 'BUDGET' && budgetId === budget.id && <Check aria-hidden="true" />}
+                    </button>
+                  ))}
+                </div>
+              )}
+              {errors.from && <p className="bl-field__error">{errors.from}</p>}
+            </div>
           )}
+
+          {/* Recurrence */}
+          <div className="flex flex-col gap-4 rounded-bl-md border border-line px-3.5 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <span id="tx-recurring-label" className="text-[0.9375rem] font-medium">
+                Recurring
+              </span>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={isRecurring}
+                aria-labelledby="tx-recurring-label"
+                onClick={() => setRecurrence(isRecurring ? 'NONE' : 'MONTHLY')}
+                className="bl-switch"
+              >
+                <i />
+              </button>
+            </div>
+
+            {isRecurring && (
+              <div className="bl-field relative" ref={recurrenceMenuRef}>
+                <span>Frequency</span>
+                <button
+                  type="button"
+                  onClick={() => setIsRecurrenceMenuOpen(prev => !prev)}
+                  className="bl-input"
+                  aria-haspopup="listbox"
+                  aria-expanded={isRecurrenceMenuOpen}
+                >
+                  {recurrenceOptions.find(o => o.value === recurrence)?.label ?? 'Monthly'}
+                  <ChevronDown aria-hidden="true" />
+                </button>
+
+                {isRecurrenceMenuOpen && (
+                  <div className="bl-menu bottom-full left-0 mb-1.5 origin-bottom" role="listbox">
+                    {recurrenceOptions.map(option => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        role="option"
+                        aria-selected={option.value === recurrence}
+                        className="bl-menu__item"
+                        onClick={() => {
+                          setRecurrence(option.value)
+                          setIsRecurrenceMenuOpen(false)
+                        }}
+                      >
+                        {option.label}
+                        {option.value === recurrence && <Check aria-hidden="true" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {apiError && (
-          <p className="rounded-xl bg-rose-50 px-4 py-2 text-sm text-rose-600 dark:bg-rose-500/10 dark:text-rose-400">
+          <p className="bl-alert bl-alert--neg" role="alert">
             {apiError}
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="bl-modal__foot">
           {editingId !== null && onDelete && (
-            <button
-              type="button"
-              className="rounded-xl border border-rose-200 px-4 py-2 text-sm font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"
-              onClick={onDelete}
-            >
+            <button type="button" className="bl-btn bl-btn--sm bl-btn--danger mr-auto" onClick={onDelete}>
               Delete
             </button>
           )}
-          <div className="ml-auto flex gap-2">
-            <button
-              type="button"
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-              onClick={handleSave}
-            >
-              Save
-            </button>
-          </div>
+          <button type="button" className="bl-btn bl-btn--sm bl-btn--ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="bl-btn bl-btn--sm bl-btn--primary" onClick={handleSave}>
+            {editingId ? 'Save changes' : 'Add transaction'}
+          </button>
         </div>
       </div>
     </div>

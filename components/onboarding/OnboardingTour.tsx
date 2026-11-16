@@ -113,7 +113,7 @@ export function OnboardingTour() {
     return (
       <>
         <div
-          className="fixed inset-0 z-[9998] bg-black/50 backdrop-blur-sm"
+          className="fixed inset-0 z-[9998] bg-(--bl-scrim)"
           onClick={finish}
           aria-hidden="true"
         />
@@ -128,7 +128,7 @@ export function OnboardingTour() {
             width: TOOLTIP_W,
             zIndex: 9999,
           }}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/12 dark:bg-[#0d2418] dark:shadow-[0_16px_48px_rgba(0,0,0,0.6)]"
+          className="rounded-bl-lg border border-line bg-surface text-ink shadow-bl-lg"
         >
           <TooltipInner
             step={step}
@@ -184,14 +184,13 @@ export function OnboardingTour() {
           position: 'fixed',
           inset: 0,
           zIndex: 9998,
-          backgroundColor: 'rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(4px)',
+          backgroundColor: 'var(--bl-scrim)',
           WebkitMaskImage: svgMask,
           maskImage: svgMask,
         }}
       />
 
-      {/* Emerald glow ring around target element */}
+      {/* Focus ring around the target element */}
       <div
         aria-hidden="true"
         style={{
@@ -202,9 +201,8 @@ export function OnboardingTour() {
           height: spotBottom - spotTop,
           zIndex: 9998,
           pointerEvents: 'none',
-          borderRadius: 14,
-          boxShadow:
-            '0 0 0 2px rgba(16,185,129,0.9), 0 0 0 4px rgba(16,185,129,0.25), 0 0 32px rgba(16,185,129,0.3)',
+          borderRadius: 10,
+          boxShadow: '0 0 0 2px var(--bl-accent), 0 0 0 6px var(--bl-focus-ring)',
           ...transStyle,
         }}
       />
@@ -221,7 +219,7 @@ export function OnboardingTour() {
           zIndex: 9999,
           transition: 'top 0.25s ease, left 0.25s ease',
         }}
-        className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-white/12 dark:bg-[#0d2418] dark:shadow-[0_16px_48px_rgba(0,0,0,0.6)]"
+        className="rounded-bl-lg border border-line bg-surface text-ink shadow-bl-lg"
       >
         <TooltipInner
           step={step}
@@ -257,64 +255,40 @@ function TooltipInner({
   const isLast = step === total - 1
 
   return (
-    <>
-      {/* Gradient top bar */}
-      <div className="h-[3px] bg-gradient-to-r from-emerald-400 to-teal-400" />
+    <div className="p-5">
+      <p className="bl-eyebrow">
+        Step {step + 1} of {total}
+      </p>
 
-      <div className="p-5">
-        {/* Step indicator */}
-        <p className="mb-2 text-xs font-semibold tracking-wide text-emerald-600 dark:text-emerald-400">
-          Step {step + 1} of {total}
-        </p>
+      <h3 className="mt-2 text-lg leading-snug font-medium tracking-[-0.02em]">{title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">{description}</p>
 
-        <h3 className="text-base font-semibold text-slate-900 dark:text-white">{title}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-slate-500 dark:text-slate-400">
-          {description}
-        </p>
+      {/* Progress */}
+      <div className="mt-5 flex gap-1" aria-hidden="true">
+        {Array.from({ length: total }).map((_, i) => (
+          <i
+            key={i}
+            className={`h-[3px] flex-1 rounded-full transition-colors ${i <= step ? 'bg-ink' : 'bg-line'}`}
+          />
+        ))}
+      </div>
 
-        {/* Dot indicators */}
-        <div className="mt-4 flex justify-center gap-1.5">
-          {Array.from({ length: total }).map((_, i) => (
-            <div
-              key={i}
-              className={`rounded-full transition-all ${
-                i === step
-                  ? 'h-2 w-4 bg-emerald-500'
-                  : 'size-2 bg-slate-200 dark:bg-white/20'
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Actions */}
-        <div className="mt-4 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={onSkip}
-            className="text-xs font-medium text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-          >
-            Skip tour
-          </button>
-          <div className="flex items-center gap-2">
-            {step > 0 && (
-              <button
-                type="button"
-                onClick={onBack}
-                className="rounded-full border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 dark:border-white/15 dark:text-slate-300 dark:hover:bg-white/10"
-              >
-                Back
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onNext}
-              className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-1.5 text-xs font-semibold text-white shadow-[0_2px_8px_rgba(16,185,129,0.4)] transition hover:from-emerald-600 hover:to-teal-600"
-            >
-              {isLast ? 'Finish' : 'Next'}
+      {/* Actions */}
+      <div className="mt-5 flex items-center justify-between gap-2">
+        <button type="button" onClick={onSkip} className="bl-btn bl-btn--xs bl-btn--quiet -ml-2.5">
+          Skip tour
+        </button>
+        <div className="flex items-center gap-2">
+          {step > 0 && (
+            <button type="button" onClick={onBack} className="bl-btn bl-btn--xs bl-btn--ghost">
+              Back
             </button>
-          </div>
+          )}
+          <button type="button" onClick={onNext} className="bl-btn bl-btn--xs bl-btn--primary">
+            {isLast ? 'Finish' : 'Next'}
+          </button>
         </div>
       </div>
-    </>
+    </div>
   )
 }

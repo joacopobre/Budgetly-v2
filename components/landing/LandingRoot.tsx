@@ -1,22 +1,10 @@
-'use client'
-
-import { useTheme } from '@/context/ThemeContext'
-import { cn } from '@/lib/utils'
-
 /**
- * Root of the landing page: applies the redesign fonts and the saved theme
- * (the same `budgetly-theme` preference the app uses).
+ * Root of the landing page. Fonts and the saved theme are applied on <html>
+ * by the root layout, shared with the rest of the product.
  */
-export default function LandingRoot({
-  children,
-  fontVariables,
-}: {
-  children: React.ReactNode
-  fontVariables: string
-}) {
-  const { theme } = useTheme()
+export default function LandingRoot({ children }: { children: React.ReactNode }) {
   return (
-    <div id="landing-root" className={cn('landing', fontVariables, theme === 'dark' && 'dark')}>
+    <div id="landing-root" className="landing">
       {children}
     </div>
   )

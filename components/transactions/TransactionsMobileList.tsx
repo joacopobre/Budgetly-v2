@@ -1,6 +1,7 @@
 'use client'
 
 import type { Transaction } from '@/types/transactions'
+import { formatTxDate, RecurrenceChip } from './TransactionsTable'
 
 type Props = {
   transactions: Transaction[]
@@ -10,14 +11,6 @@ type Props = {
   getSourceLabel: (tx: Transaction) => string
 }
 
-function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  const now = new Date()
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
-  if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric'
-  return d.toLocaleDateString('en-GB', opts)
-}
-
 export function TransactionsMobileList({
   transactions,
   onEdit,
@@ -25,56 +18,50 @@ export function TransactionsMobileList({
   formatMoney,
   getSourceLabel,
 }: Props) {
+  if (transactions.length === 0) {
+    return <p className="bl-empty md:hidden">No transactions found.</p>
+  }
+
   return (
-    <div className="space-y-3 md:hidden">
-      {transactions.map(tx => {
-        const isIncome = tx.amount > 0
-        const amountColor = isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-        const accentBar = isIncome ? 'bg-emerald-500' : 'bg-rose-500'
-        return (
-          <div
-            key={tx.id}
-            className="relative overflow-hidden flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.05)] dark:border-white/8 dark:bg-white/6 dark:shadow-[0_2px_8px_rgba(0,0,0,0.3)] dark:backdrop-blur-md"
-          >
-            <div className={`absolute top-0 left-0 right-0 h-[3px] ${accentBar}`} />
-            <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
-              <span>{formatDate(tx.date)}</span>
-              <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-white/10 dark:text-slate-400">
-                {tx.type}
-              </span>
+    <div className="bl-card bl-rule-list bl-rise md:hidden" style={{ '--i': 2 } as React.CSSProperties}>
+      {transactions.map(tx => (
+        <div key={tx.id} className="flex flex-col gap-3 px-4 py-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
+                {tx.description}
+                <RecurrenceChip recurrence={tx.recurrence} />
+              </p>
+              <p className="bl-meta mt-1">
+                {formatTxDate(tx.date)} · {tx.category}
+              </p>
             </div>
+            <span
+              className={`shrink-0 font-medium whitespace-nowrap tabular-nums ${tx.amount > 0 ? 'text-positive' : ''}`}
+            >
+              {tx.amount > 0 ? '+' : ''}
+              {formatMoney(tx.amount)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm text-ink-muted">
+              {tx.type} · from {getSourceLabel(tx)}
+            </span>
             <div className="flex items-center gap-2">
-              <span className="text-base font-semibold text-slate-800 dark:text-slate-100">{tx.description}</span>
-              {tx.recurrence !== 'NONE' && (
-                <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400">
-                  ↻ {tx.recurrence.charAt(0) + tx.recurrence.slice(1).toLowerCase()}
-                </span>
-              )}
-            </div>
-            <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
-              <span>{tx.category}</span>
-              <span className={`font-semibold ${amountColor}`}>{formatMoney(tx.amount)}</span>
-            </div>
-            <div className="text-xs text-slate-400 dark:text-slate-500">From: {getSourceLabel(tx)}</div>
-            <div className="flex items-center justify-end gap-2">
-              <button
-                type="button"
-                className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-slate-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
-                onClick={() => onEdit(tx)}
-              >
+              <button type="button" className="bl-btn bl-btn--xs bl-btn--ghost" onClick={() => onEdit(tx)}>
                 Edit
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-rose-200 px-3 py-1 text-xs font-medium text-rose-600 transition hover:bg-rose-50 dark:border-rose-500/30 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                className="bl-btn bl-btn--xs bl-btn--danger"
                 onClick={() => onDelete(tx.id)}
               >
                 Delete
               </button>
             </div>
           </div>
-        )
-      })}
+        </div>
+      ))}
     </div>
   )
 }

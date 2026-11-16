@@ -1,6 +1,6 @@
 'use client'
 
-import { MoreHorizontal, X } from 'lucide-react'
+import { MoreHorizontal, Plus } from 'lucide-react'
 import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { BudgetsContext } from '@/context/BudgetsContext'
 import type { Budget, BudgetKind } from '@/types/budgets'
@@ -12,25 +12,19 @@ import { buildBudgetBalanceSeries } from '@/lib/budgets/buildBudgetBalanceSeries
 import { Transaction } from '@/types/transactions'
 import { TransactionsContext } from '@/context/TransactionsContext'
 import type { CategoryLimit } from '@/types/categoryLimits'
+import { formatCurrency } from '@/lib/currency'
 
 type Props = {
   initialBudgets: Budget[]
   initialLimits: CategoryLimit[]
 }
 
-const formatAmount = (value: number): string => {
-  if (value === 0) return '£0'
-  const abs = Math.abs(value)
-  const hasDecimals = Math.round(abs * 100) % 100 !== 0
-  const fixed = abs.toFixed(hasDecimals ? 2 : 0)
-  const withCommas = fixed.replace(/\B(?=(\d{3})+(?!\d))/g, ',')
-  return `${value < 0 ? '-' : ''}£${withCommas}`
-}
+const formatAmount = (value: number) => formatCurrency(value, { decimals: 'auto' })
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
   const now = new Date()
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
+  const opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short' }
   if (d.getFullYear() !== now.getFullYear()) opts.year = 'numeric'
   return d.toLocaleDateString('en-GB', opts)
 }
@@ -241,44 +235,71 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
     [budgets],
   )
 
+  const openAddBudget = () => {
+    setEditingBudgetId(null)
+    setName('')
+    setLimit('')
+    setStartingAmount('')
+    setIsModalOpen(true)
+    setBudgetKind('SPEND')
+  }
+
+  const openFunds = (mode: 'ADD' | 'WITHDRAW', id: string) => {
+    setFundMode(mode)
+    setActiveBudgetId(id)
+    setFundAmount('')
+    setFundNote('')
+    setIsFundModalOpen(true)
+    setIsFundNoteOpen(false)
+    setOpenMenuId(null)
+  }
+
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-8 px-5 py-10 md:px-8 lg:px-12">
+    <main className="bl-container bl-page">
       {/* Click-outside overlay for three-dot menus */}
       {openMenuId && (
         <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
       )}
 
       {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <h1 className="text-4xl font-bold text-slate-900 dark:text-white md:text-5xl">Budgets</h1>
-        <button
-          type="button"
-          className="inline-flex cursor-pointer items-center justify-center rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(16,185,129,0.35)] transition-all hover:from-emerald-600 hover:to-teal-600 hover:shadow-[0_4px_18px_rgba(16,185,129,0.5)]"
-          onClick={() => {
-            setEditingBudgetId(null)
-            setName('')
-            setLimit('')
-            setStartingAmount('')
-            setIsModalOpen(true)
-            setBudgetKind('SPEND')
-          }}
-        >
+      <div className="bl-head bl-rise">
+        <h1 className="bl-h1">Budgets</h1>
+        <button type="button" className="bl-btn bl-btn--sm bl-btn--primary" onClick={openAddBudget}>
+          <Plus aria-hidden="true" />
           Add budget
         </button>
       </div>
 
       {deleteError && (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+        <div className="bl-alert bl-alert--neg" role="alert">
           {deleteError}
         </div>
       )}
 
       {/* Two-column layout: main + sidebar */}
-      <div className="grid gap-6 xl:grid-cols-[1fr_288px]" ref={menuContainerRef}>
+      <div
+        className="bl-rise grid gap-x-3 gap-y-8 lg:grid-cols-[minmax(0,1fr)_320px]"
+        style={{ '--i': 1 } as React.CSSProperties}
+        ref={menuContainerRef}
+      >
         {/* Main area */}
-        <div className="flex flex-col gap-8">
+        <div className="flex min-w-0 flex-col gap-8">
+          {budgets.length === 0 && (
+            <div className="bl-empty py-14">
+              <p className="text-base font-medium text-ink">No budgets yet</p>
+              <p className="max-w-xs">
+                Set money aside to spend, or save towards a goal, and watch each pot move.
+              </p>
+              <button type="button" className="bl-btn bl-btn--sm bl-btn--outline mt-4" onClick={openAddBudget}>
+                <Plus aria-hidden="true" />
+                Add your first budget
+              </button>
+            </div>
+          )}
+
           {/* Budget cards grid */}
-          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+          {budgets.length > 0 && (
+          <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
             {budgets.map(budget => {
               const chartData = buildBudgetBalanceSeries(budget.events ?? [], 30)
               const isSave = budget.kind === 'SAVE'
@@ -292,102 +313,58 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
                   : 0
               const barPercent = isSave ? saveProgress : spendProgress
               const isOverspent = !isSave && spendProgress > 80
-              const progressBarClass = isSave
-                ? 'bg-emerald-500'
-                : isOverspent
-                  ? 'bg-[#dc2626]'
-                  : 'bg-slate-400 dark:bg-slate-500'
+              const barClass = isSave ? '' : isOverspent ? 'bl-bar--neg' : 'bl-bar--muted'
               const isExpanded = expandedBudgetId === budget.id
               const isMenuOpen = openMenuId === budget.id
 
               return (
-                <div
-                  key={budget.id}
-                  className="group relative flex flex-col gap-3 rounded-2xl border border-[#0d2118]/8 bg-white px-5 py-5 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md"
-                >
+                <div key={budget.id} className="bl-card bl-card--pad relative flex flex-col">
                   {/* Card header */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h2 className="truncate text-base font-semibold text-slate-800 dark:text-slate-100">
-                          {budget.name}
-                        </h2>
-                        <span
-                          className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                            isSave
-                              ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                              : 'bg-slate-100 text-slate-500 dark:bg-white/8 dark:text-slate-400'
-                          }`}
-                        >
-                          {isSave ? 'Save' : 'Spend'}
-                        </span>
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1.5">
-                        <span className="text-2xl font-semibold text-slate-900 dark:text-white">
-                          {formatAmount(current)}
-                        </span>
-                        {isSave && target > 0 && (
-                          <>
-                            <span className="text-sm text-slate-400 dark:text-slate-500">
-                              / {formatAmount(target)}
-                            </span>
-                            <span className="text-xs font-medium text-slate-400 dark:text-slate-500">
-                              · {saveProgress}%
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                  <div className="flex h-8 items-center gap-2.5">
+                    <h2 className="bl-card-title truncate">{budget.name}</h2>
+                    <span className={`bl-chip ${isSave ? 'bl-chip--accent' : ''}`}>
+                      {isSave ? 'Save' : 'Spend'}
+                    </span>
 
                     {/* Three-dot menu */}
-                    <div className="relative shrink-0">
+                    <div className="relative -mr-2 ml-auto shrink-0">
                       <button
                         type="button"
                         title="Actions"
-                        className="flex size-7 cursor-pointer items-center justify-center rounded-lg text-slate-400 opacity-0 transition hover:bg-slate-100 hover:text-slate-700 group-hover:opacity-100 dark:text-slate-500 dark:hover:bg-white/8 dark:hover:text-slate-300"
+                        aria-label={`Actions for ${budget.name}`}
+                        aria-haspopup="menu"
+                        aria-expanded={isMenuOpen}
+                        className="bl-icon-btn"
                         onClick={e => {
                           e.stopPropagation()
                           setOpenMenuId(isMenuOpen ? null : budget.id)
                         }}
                       >
-                        <MoreHorizontal className="size-4" />
+                        <MoreHorizontal aria-hidden="true" />
                       </button>
 
                       {isMenuOpen && (
-                        <div className="absolute right-0 top-full z-20 mt-1 w-44 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)] dark:border-white/10 dark:bg-[#0d2418]">
+                        <div className="bl-menu top-full right-0 mt-1 w-44 min-w-0 origin-top-right" role="menu">
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/8"
-                            onClick={() => {
-                              setFundMode('ADD')
-                              setActiveBudgetId(budget.id)
-                              setFundAmount('')
-                              setFundNote('')
-                              setIsFundModalOpen(true)
-                              setIsFundNoteOpen(false)
-                              setOpenMenuId(null)
-                            }}
+                            role="menuitem"
+                            className="bl-menu__item"
+                            onClick={() => openFunds('ADD', budget.id)}
                           >
                             Add funds
                           </button>
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/8"
-                            onClick={() => {
-                              setFundMode('WITHDRAW')
-                              setActiveBudgetId(budget.id)
-                              setFundAmount('')
-                              setFundNote('')
-                              setIsFundModalOpen(true)
-                              setIsFundNoteOpen(false)
-                              setOpenMenuId(null)
-                            }}
+                            role="menuitem"
+                            className="bl-menu__item"
+                            onClick={() => openFunds('WITHDRAW', budget.id)}
                           >
                             Withdraw
                           </button>
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/8"
+                            role="menuitem"
+                            className="bl-menu__item"
                             onClick={() => {
                               setEditingBudgetId(budget.id)
                               setName(budget.name)
@@ -402,7 +379,8 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
                           </button>
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left text-sm text-slate-700 transition hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-white/8"
+                            role="menuitem"
+                            className="bl-menu__item"
                             onClick={() => {
                               setExpandedBudgetId(prev =>
                                 prev === budget.id ? null : budget.id,
@@ -412,9 +390,11 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
                           >
                             {isExpanded ? 'Hide history' : 'Show history'}
                           </button>
+                          <div className="bl-menu__rule" />
                           <button
                             type="button"
-                            className="flex w-full items-center gap-2.5 border-t border-slate-100 px-3 py-2.5 text-left text-sm text-rose-600 transition hover:bg-rose-50 dark:border-white/8 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                            role="menuitem"
+                            className="bl-menu__item bl-menu__item--danger"
                             onClick={() => {
                               handleDelete(budget.id)
                               setOpenMenuId(null)
@@ -427,72 +407,64 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
                     </div>
                   </div>
 
+                  <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="bl-amount">{formatAmount(current)}</span>
+                    {target > 0 && (
+                      <span className="text-sm text-ink-muted tabular-nums">
+                        {isSave ? `/ ${formatAmount(target)} · ${saveProgress}%` : `left of ${formatAmount(target)}`}
+                      </span>
+                    )}
+                  </div>
+
                   {/* Progress bar or chart */}
                   {isExpanded ? (
                     chartData.length === 0 ? (
-                      <div className="rounded-xl bg-slate-50 p-4 text-sm text-slate-500 dark:bg-white/5 dark:text-slate-400">
-                        No activity yet — add or withdraw funds to see the trend.
-                      </div>
+                      <p className="mt-4 rounded-bl-md bg-sunk p-4 text-sm text-ink-muted">
+                        No activity yet. Add or withdraw funds to see the trend.
+                      </p>
                     ) : (
-                      <div className="rounded-xl bg-slate-50 p-4 dark:bg-white/5">
+                      <div className="mt-4 rounded-bl-md bg-sunk/60 px-1 pt-3 pb-1">
                         <BudgetLineChart data={chartData} />
                       </div>
                     )
                   ) : (
-                    <div className="h-1.5 w-full rounded-full bg-slate-100 dark:bg-white/10">
-                      <div
-                        className={`h-full rounded-full transition-all ${progressBarClass}`}
-                        style={{ width: `${barPercent}%` }}
-                      />
+                    <div className={`bl-bar mt-4 ${barClass}`}>
+                      <i style={{ width: `${barPercent}%` }} />
                     </div>
                   )}
                 </div>
               )
             })}
           </div>
+          )}
 
           {/* Recent Adjustments */}
           {recentAdjustments.length > 0 && (
             <section className="flex flex-col gap-3">
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                Recent Adjustments
-              </p>
-              <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-white/8 dark:bg-white/6 dark:backdrop-blur-md">
-                <table className="min-w-full text-sm">
-                  <thead className="border-b border-slate-100 bg-slate-50 text-xs tracking-wider text-slate-500 uppercase dark:border-white/8 dark:bg-white/5 dark:text-slate-400">
+              <p className="bl-eyebrow">Recent adjustments</p>
+              <div className="bl-table-wrap overflow-x-auto">
+                <table className="bl-table">
+                  <thead>
                     <tr>
-                      <th className="px-4 py-3 text-left">Budget</th>
-                      <th className="px-4 py-3 text-left">Action</th>
-                      <th className="px-4 py-3 text-right">Amount</th>
-                      <th className="px-4 py-3 text-right">Date</th>
+                      <th>Budget</th>
+                      <th>Action</th>
+                      <th className="text-right">Amount</th>
+                      <th className="text-right">Date</th>
                     </tr>
                   </thead>
                   <tbody>
                     {recentAdjustments.map((adj, i) => (
-                      <tr
-                        key={i}
-                        className="border-t border-slate-100 transition hover:bg-slate-50/60 dark:border-white/6 dark:hover:bg-white/4"
-                      >
-                        <td className="px-4 py-3 font-medium text-slate-800 dark:text-slate-100">
-                          {adj.budgetName}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
-                              adj.action === 'Add'
-                                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-                                : 'bg-slate-100 text-slate-500 dark:bg-white/8 dark:text-slate-400'
-                            }`}
-                          >
+                      <tr key={i}>
+                        <td className="font-medium">{adj.budgetName}</td>
+                        <td>
+                          <span className={`bl-chip ${adj.action === 'Add' ? 'bl-chip--accent' : ''}`}>
                             {adj.action}
                           </span>
                         </td>
-                        <td className="px-4 py-3 text-right font-semibold text-slate-700 dark:text-slate-200">
+                        <td className="text-right font-medium whitespace-nowrap">
                           {formatAmount(adj.amount)}
                         </td>
-                        <td className="px-4 py-3 text-right text-slate-500 dark:text-slate-400">
-                          {formatDate(adj.date)}
-                        </td>
+                        <td className="bl-meta text-right whitespace-nowrap">{formatDate(adj.date)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -503,27 +475,24 @@ export default function BudgetsClient({ initialBudgets, initialLimits }: Props) 
         </div>
 
         {/* Sidebar */}
-        <aside className="flex flex-col gap-4">
+        <aside className="flex min-w-0 flex-col gap-3">
           <SpendingLimits initialLimits={initialLimits} compact />
 
           {/* Insights */}
-          <div className="rounded-2xl border border-[#0d2118]/8 bg-white px-4 py-4 shadow-sm dark:border-white/8 dark:bg-white/8 dark:backdrop-blur-md">
-            <p className="mb-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-              Insights
-            </p>
-            <div className="flex flex-col divide-y divide-slate-100 dark:divide-white/8">
-              <div className="flex items-center justify-between py-3 first:pt-0">
-                <span className="text-sm text-slate-600 dark:text-slate-400">
-                  Available Liquidity
-                </span>
-                <span className="text-sm font-semibold text-slate-900 dark:text-white">
+          <div className="bl-card bl-card--pad">
+            <h2 className="bl-card-title">Insights</h2>
+            <div className="bl-rule-list mt-2">
+              <div className="flex items-center justify-between gap-3 py-3">
+                <span className="text-[0.9375rem] text-ink-muted">Available liquidity</span>
+                <span className="text-[0.9375rem] font-medium tabular-nums">
                   {formatAmount(availableLiquidity)}
                 </span>
               </div>
-              <div className="flex items-center justify-between py-3 last:pb-0">
-                <span className="text-sm text-slate-600 dark:text-slate-400">Avg. Daily Burn</span>
-                <span className="text-sm font-semibold text-[#dc2626] dark:text-[#f87171]">
-                  {formatAmount(avgDailyBurn)}/day
+              <div className="flex items-center justify-between gap-3 pt-3">
+                <span className="text-[0.9375rem] text-ink-muted">Avg. daily spend</span>
+                <span className="text-[0.9375rem] font-medium tabular-nums">
+                  {formatAmount(avgDailyBurn)}
+                  <span className="font-normal text-ink-muted"> / day</span>
                 </span>
               </div>
             </div>

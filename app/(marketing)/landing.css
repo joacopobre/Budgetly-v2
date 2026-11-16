@@ -1,6 +1,8 @@
 /*
  * Landing page styles.
  *
+ * Shared parts (container, eyebrow, buttons, cards) live in styles/ui.css.
+ *
  * Colours, type, radii, shadows and timings all come from styles/tokens.css.
  * A section that sits on a dark surface adds the `dark` class, which swaps the
  * semantic tokens for everything inside it.
@@ -33,12 +35,6 @@
 }
 
 /* ── Layout ────────────────────────────────────────────────────────────────── */
-.bl-container {
-  width: 100%;
-  max-width: 1240px;
-  margin-inline: auto;
-  padding-inline: clamp(20px, 4vw, 40px);
-}
 .bl-section {
   padding-block: clamp(88px, 13vw, 176px);
 }
@@ -77,91 +73,6 @@
   color: var(--bl-fg-muted);
   text-wrap: pretty;
 }
-.bl-eyebrow {
-  font-family: var(--bl-font-mono);
-  font-size: var(--bl-text-label);
-  line-height: 1.4;
-  letter-spacing: var(--bl-tracking-label);
-  text-transform: uppercase;
-  color: var(--bl-fg-muted);
-}
-.bl-figures {
-  font-variant-numeric: tabular-nums;
-}
-.bl-mono {
-  font-family: var(--bl-font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-/* ── Buttons ───────────────────────────────────────────────────────────────── */
-.bl-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  height: 48px;
-  padding-inline: 20px;
-  border-radius: var(--bl-radius-md);
-  border: 1px solid transparent;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  white-space: nowrap;
-  cursor: pointer;
-  transition:
-    background-color var(--bl-dur-2) var(--bl-ease-out),
-    border-color var(--bl-dur-2) var(--bl-ease-out),
-    color var(--bl-dur-2) var(--bl-ease-out),
-    transform var(--bl-dur-1) var(--bl-ease-out);
-}
-.bl-btn:active {
-  transform: scale(0.98);
-}
-.bl-btn--sm {
-  height: 38px;
-  padding-inline: 14px;
-  font-size: 0.875rem;
-}
-.bl-btn--primary {
-  background: var(--bl-btn-bg);
-  color: var(--bl-btn-fg);
-}
-.bl-btn--primary:hover {
-  background: color-mix(in srgb, var(--bl-btn-bg) 86%, var(--bl-accent));
-}
-.bl-btn--accent {
-  background: var(--bl-accent);
-  color: var(--bl-on-accent);
-}
-.bl-btn--accent:hover {
-  background: color-mix(in srgb, var(--bl-accent) 86%, white);
-}
-.bl-btn--ghost {
-  border-color: var(--bl-border-strong);
-  color: var(--bl-fg);
-}
-.bl-btn--ghost:hover {
-  background: color-mix(in srgb, var(--bl-fg) 6%, transparent);
-}
-.bl-btn--quiet {
-  color: var(--bl-fg-muted);
-  padding-inline: 12px;
-}
-.bl-btn--quiet:hover {
-  color: var(--bl-fg);
-  background: color-mix(in srgb, var(--bl-fg) 6%, transparent);
-}
-.bl-btn svg {
-  width: 16px;
-  height: 16px;
-  transition: transform var(--bl-dur-2) var(--bl-ease-out);
-}
-.bl-btn:hover svg.bl-arrow {
-  transform: translateX(2px);
-}
-.bl-btn:hover svg.bl-arrow-down {
-  transform: translateY(2px);
-}
 
 /* ── Surfaces ──────────────────────────────────────────────────────────────── */
 .bl-window {
@@ -173,11 +84,6 @@
   overflow: hidden;
   /* keeps rounded corners on the scaled iframe in Safari */
   isolation: isolate;
-}
-.bl-card {
-  border-radius: var(--bl-radius-lg);
-  border: 1px solid var(--bl-border);
-  background: var(--bl-surface);
 }
 /* Ledger rules: the flat state of the hero line-work, as a still texture. */
 .bl-rules {

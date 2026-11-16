@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Papa from 'papaparse'
+import { Check, ChevronDown, Upload, X } from 'lucide-react'
+import { formatCurrency } from '@/lib/currency'
 import type { TxType } from '@/types/transactions'
 
 type Step = 1 | 2 | 3
@@ -236,24 +238,29 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
   const canProceedFromStep2 =
     columnMap.date !== '' && columnMap.description !== '' && columnMap.amount !== ''
 
+  const stepLabels = ['Upload', 'Map columns', 'Review'] as const
+
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+      className="bl-scrim"
       onClick={() => {
         if (!importing) onClose()
       }}
     >
       <div
-        className={`flex w-full flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-white/10 dark:bg-[#0e2318] ${
-          step === 1 ? 'max-w-lg' : 'max-w-3xl'
-        }`}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="csv-modal-title"
+        className={`bl-modal ${step === 1 ? 'max-w-[540px]' : 'bl-modal--wide'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between gap-3">
+        <div className="bl-modal__head">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Import CSV</h2>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <h2 id="csv-modal-title" className="bl-modal__title">
+              Import CSV
+            </h2>
+            <p className="bl-modal__sub">
               {step === 1 && 'Upload a CSV file to bulk-import transactions.'}
               {step === 2 && 'Map your CSV columns to transaction fields.'}
               {step === 3 && 'Review your data before confirming the import.'}
@@ -261,44 +268,39 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
           </div>
           <button
             type="button"
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-300"
+            className="bl-icon-btn"
             onClick={onClose}
             disabled={importing}
             aria-label="Close modal"
           >
-            ✕
+            <X aria-hidden="true" />
           </button>
         </div>
 
-        {/* Step indicators */}
-        <div className="flex items-center gap-2">
-          {([1, 2, 3] as const).map((s, i) => (
-            <div key={s} className="contents">
-              <div
-                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold ${
-                  step >= s
-                    ? 'bg-emerald-500 text-white'
-                    : 'bg-gray-100 text-gray-400 dark:bg-white/10 dark:text-gray-500'
-                }`}
-              >
-                {s}
-              </div>
-              {i < 2 && (
-                <div
-                  className={`h-px flex-1 ${step > s ? 'bg-emerald-400' : 'bg-gray-200 dark:bg-white/10'}`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
+        {/* Steps */}
+        <ol className="grid grid-cols-3 gap-2">
+          {stepLabels.map((label, i) => {
+            const s = (i + 1) as Step
+            return (
+              <li key={label} aria-current={step === s ? 'step' : undefined}>
+                <span className={`block h-[3px] rounded-full ${step >= s ? 'bg-ink' : 'bg-line'}`} />
+                <span className={`bl-eyebrow mt-2 block text-[0.6875rem] ${step >= s ? 'text-ink' : ''}`}>
+                  {s} · {label}
+                </span>
+              </li>
+            )
+          })}
+        </ol>
 
         {/* Step 1: Upload */}
         {step === 1 && (
           <div
-            className={`flex cursor-pointer flex-col items-center gap-4 rounded-xl border-2 border-dashed p-10 text-center transition ${
+            role="button"
+            tabIndex={0}
+            className={`flex cursor-pointer flex-col items-center gap-4 rounded-bl-lg border border-dashed px-6 py-11 text-center transition-colors ${
               isDragging
-                ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10'
-                : 'border-gray-200 hover:border-emerald-300 dark:border-white/10 dark:hover:border-emerald-700'
+                ? 'border-brand bg-brand-soft'
+                : 'border-line-strong hover:border-ink-faint hover:bg-sunk/50'
             }`}
             onDragOver={e => {
               e.preventDefault()
@@ -307,27 +309,19 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
           >
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-              <svg
-                className="h-6 w-6 text-emerald-600 dark:text-emerald-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                />
-              </svg>
-            </div>
+            <span className="grid size-11 place-items-center rounded-bl-md bg-sunk text-ink">
+              <Upload aria-hidden="true" className="size-5" />
+            </span>
             <div>
-              <p className="font-medium text-gray-700 dark:text-gray-300">
-                Drag & drop a CSV file, or click to browse
-              </p>
-              <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Supports .csv files only</p>
+              <p className="font-medium">Drag and drop a CSV file, or click to browse</p>
+              <p className="mt-1 text-sm text-ink-muted">Supports .csv files only</p>
             </div>
             <input
               ref={fileInputRef}
@@ -341,37 +335,24 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
 
         {/* Step 2: Map columns */}
         {step === 2 && (
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-6">
             {/* CSV preview */}
             <div>
-              <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                Preview (first 3 rows)
-              </p>
-              <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
-                <table className="w-full text-xs">
+              <p className="bl-eyebrow mb-2.5">Preview · first 3 rows</p>
+              <div className="bl-table-wrap overflow-x-auto rounded-bl-md">
+                <table className="bl-table bl-table--dense">
                   <thead>
-                    <tr className="border-b border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+                    <tr>
                       {headers.map(h => (
-                        <th
-                          key={h}
-                          className="px-3 py-2 text-left font-semibold whitespace-nowrap text-gray-600 dark:text-gray-400"
-                        >
-                          {h}
-                        </th>
+                        <th key={h}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {rawRows.slice(0, 3).map((row, i) => (
-                      <tr
-                        key={i}
-                        className="border-b border-gray-100 last:border-0 dark:border-white/5"
-                      >
+                      <tr key={i}>
                         {headers.map(h => (
-                          <td
-                            key={h}
-                            className="px-3 py-2 whitespace-nowrap text-gray-700 dark:text-gray-300"
-                          >
+                          <td key={h} className="whitespace-nowrap">
                             {row[h] ?? '—'}
                           </td>
                         ))}
@@ -384,10 +365,8 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
 
             {/* Column mapping */}
             <div>
-              <p className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-                Map columns
-              </p>
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <p className="bl-eyebrow mb-2.5">Map columns</p>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {(
                   [
                     { key: 'date', required: true },
@@ -397,41 +376,42 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
                     { key: 'type', required: false },
                   ] as { key: keyof ColumnMap; required: boolean }[]
                 ).map(field => (
-                  <label
-                    key={field.key}
-                    className="flex flex-col gap-1 text-sm font-medium text-gray-700 dark:text-gray-300"
-                  >
+                  <label key={field.key} className="bl-field">
                     <span>
                       {FIELD_LABELS[field.key]}
                       {field.required ? (
-                        <span className="ml-1 text-red-400">*</span>
+                        <span className="ml-1 text-negative" aria-hidden="true">
+                          *
+                        </span>
                       ) : (
-                        <span className="ml-1 text-xs font-normal text-gray-400">(optional)</span>
+                        <span className="bl-field__hint ml-1">(optional)</span>
                       )}
                     </span>
-                    <select
-                      value={columnMap[field.key]}
-                      onChange={e =>
-                        setColumnMap(prev => ({ ...prev, [field.key]: e.target.value }))
-                      }
-                      className="rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-800 shadow-sm outline-none transition focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200"
-                    >
-                      <option value="">— not mapped —</option>
-                      {headers.map(h => (
-                        <option key={h} value={h}>
-                          {h}
-                        </option>
-                      ))}
-                    </select>
+                    <span className="relative block">
+                      <select
+                        value={columnMap[field.key]}
+                        onChange={e =>
+                          setColumnMap(prev => ({ ...prev, [field.key]: e.target.value }))
+                        }
+                        className={`bl-input appearance-none pr-9 ${columnMap[field.key] ? '' : 'bl-placeholder'}`}
+                      >
+                        <option value="">Not mapped</option>
+                        {headers.map(h => (
+                          <option key={h} value={h}>
+                            {h}
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-ink-faint"
+                      />
+                    </span>
                     {!field.required && field.key === 'category' && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        Defaults to &quot;Uncategorized&quot;
-                      </span>
+                      <span className="bl-field__hint">Defaults to &quot;Uncategorized&quot;</span>
                     )}
                     {!field.required && field.key === 'type' && (
-                      <span className="text-xs text-gray-400 dark:text-gray-500">
-                        Defaults to &quot;Expense&quot;
-                      </span>
+                      <span className="bl-field__hint">Defaults to &quot;Expense&quot;</span>
                     )}
                   </label>
                 ))}
@@ -443,103 +423,52 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
         {/* Step 3: Review */}
         {step === 3 && !importSummary && (
           <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-3 text-sm">
-              <span className="rounded-full bg-emerald-100 px-3 py-1 font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                {validCount} valid
-              </span>
-              {invalidCount > 0 && (
-                <span className="rounded-full bg-red-100 px-3 py-1 font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
-                  {invalidCount} invalid
-                </span>
-              )}
-              <span className="text-gray-400 dark:text-gray-500">
-                Only valid rows will be imported.
-              </span>
+            <div className="flex flex-wrap items-center gap-2.5 text-sm">
+              <span className="bl-chip bl-chip--accent">{validCount} valid</span>
+              {invalidCount > 0 && <span className="bl-chip bl-chip--neg">{invalidCount} invalid</span>}
+              <span className="text-ink-muted">Only valid rows will be imported.</span>
             </div>
 
             {importing && (
               <div className="flex flex-col gap-2">
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>Importing...</span>
+                <div className="bl-meta flex justify-between">
+                  <span>Importing…</span>
                   <span>
                     {importProgress} / {validCount}
                   </span>
                 </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-white/10">
-                  <div
-                    className="h-full rounded-full bg-emerald-500 transition-all duration-200"
-                    style={{ width: `${(importProgress / validCount) * 100}%` }}
-                  />
+                <div className="bl-bar">
+                  <i style={{ width: `${(importProgress / validCount) * 100}%` }} />
                 </div>
               </div>
             )}
 
-            <div className="max-h-72 overflow-y-auto rounded-xl border border-gray-200 dark:border-white/10">
-              <table className="w-full text-xs">
+            <div className="bl-table-wrap max-h-72 overflow-y-auto rounded-bl-md">
+              <table className="bl-table bl-table--dense">
                 <thead className="sticky top-0 z-10">
-                  <tr className="border-b border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-[#0a1c10]">
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
-                      Date
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
-                      Description
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
-                      Category
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
-                      Type
-                    </th>
-                    <th className="px-3 py-2 text-right font-semibold text-gray-600 dark:text-gray-400">
-                      Amount
-                    </th>
-                    <th className="px-3 py-2 text-left font-semibold text-gray-600 dark:text-gray-400">
-                      Status
-                    </th>
+                  <tr>
+                    <th>Date</th>
+                    <th>Description</th>
+                    <th>Category</th>
+                    <th>Type</th>
+                    <th className="text-right">Amount</th>
+                    <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
                   {parsedRows.map((row, i) => (
-                    <tr
-                      key={i}
-                      className={`border-b border-gray-100 last:border-0 dark:border-white/5 ${
-                        row.valid ? '' : 'bg-red-50 dark:bg-red-900/10'
-                      }`}
-                    >
-                      <td
-                        className={`px-3 py-2 whitespace-nowrap ${row.valid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'}`}
-                      >
-                        {row.date || '—'}
-                      </td>
-                      <td
-                        className={`px-3 py-2 max-w-[12rem] truncate ${row.valid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'}`}
-                      >
-                        {row.description || '—'}
-                      </td>
-                      <td
-                        className={`px-3 py-2 whitespace-nowrap ${row.valid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'}`}
-                      >
-                        {row.category}
-                      </td>
-                      <td
-                        className={`px-3 py-2 whitespace-nowrap ${row.valid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'}`}
-                      >
-                        {row.type}
-                      </td>
-                      <td
-                        className={`px-3 py-2 text-right whitespace-nowrap ${row.valid ? 'text-gray-700 dark:text-gray-300' : 'text-red-600 dark:text-red-400'}`}
-                      >
-                        {row.amount.toFixed(2)}
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
+                    <tr key={i} className={row.valid ? '' : 'bg-negative-soft text-negative'}>
+                      <td className="bl-mono whitespace-nowrap">{row.date || '—'}</td>
+                      <td className="max-w-[12rem] truncate">{row.description || '—'}</td>
+                      <td className="whitespace-nowrap">{row.category}</td>
+                      <td className="whitespace-nowrap">{row.type}</td>
+                      <td className="text-right whitespace-nowrap">{formatCurrency(row.amount)}</td>
+                      <td className="whitespace-nowrap">
                         {row.valid ? (
-                          <span className="text-emerald-600 dark:text-emerald-400">✓</span>
+                          <Check aria-label="Valid" className="size-4 text-positive" />
                         ) : (
-                          <span
-                            title={row.errors.join(', ')}
-                            className="cursor-help text-red-500 dark:text-red-400"
-                          >
-                            ✕ {row.errors.join(', ')}
+                          <span title={row.errors.join(', ')} className="cursor-help">
+                            {row.errors.join(', ')}
                           </span>
                         )}
                       </td>
@@ -553,25 +482,13 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
 
         {/* Import summary */}
         {importSummary && (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
-              <svg
-                className="h-7 w-7 text-emerald-600 dark:text-emerald-400"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <div className="text-center">
-              <p className="text-lg font-semibold text-gray-900 dark:text-white">Import complete</p>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex flex-col items-center gap-4 py-6 text-center">
+            <span className="grid size-12 place-items-center rounded-full bg-brand-soft text-brand-ink">
+              <Check aria-hidden="true" className="size-6" />
+            </span>
+            <div>
+              <p className="bl-modal__title">Import complete</p>
+              <p className="bl-modal__sub">
                 {importSummary.imported} imported
                 {importSummary.failed > 0 && `, ${importSummary.failed} failed`}
               </p>
@@ -580,13 +497,9 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
         )}
 
         {/* Footer */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-end sm:gap-2">
+        <div className="bl-modal__foot">
           {importSummary ? (
-            <button
-              type="button"
-              className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700"
-              onClick={onClose}
-            >
+            <button type="button" className="bl-btn bl-btn--sm bl-btn--primary" onClick={onClose}>
               Done
             </button>
           ) : (
@@ -594,7 +507,7 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
               {step === 2 && (
                 <button
                   type="button"
-                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
+                  className="bl-btn bl-btn--sm bl-btn--quiet mr-auto"
                   onClick={() => setStep(1)}
                 >
                   Back
@@ -603,7 +516,7 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
               {step === 3 && !importing && (
                 <button
                   type="button"
-                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
+                  className="bl-btn bl-btn--sm bl-btn--quiet mr-auto"
                   onClick={() => setStep(2)}
                 >
                   Back
@@ -611,7 +524,7 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
               )}
               <button
                 type="button"
-                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-white/10 dark:text-gray-300 dark:hover:bg-white/10"
+                className="bl-btn bl-btn--sm bl-btn--ghost"
                 onClick={onClose}
                 disabled={importing}
               >
@@ -621,7 +534,7 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
                 <button
                   type="button"
                   disabled={!canProceedFromStep2}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bl-btn bl-btn--sm bl-btn--primary"
                   onClick={handleGoToReview}
                 >
                   Review import
@@ -631,19 +544,15 @@ export function CsvImportModal({ isOpen, onClose, onImported }: Props) {
                 <button
                   type="button"
                   disabled={validCount === 0}
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="bl-btn bl-btn--sm bl-btn--primary"
                   onClick={handleImport}
                 >
                   Import {validCount} transaction{validCount !== 1 ? 's' : ''}
                 </button>
               )}
               {step === 3 && importing && (
-                <button
-                  type="button"
-                  disabled
-                  className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white opacity-70"
-                >
-                  Importing...
+                <button type="button" disabled className="bl-btn bl-btn--sm bl-btn--primary">
+                  Importing…
                 </button>
               )}
             </>

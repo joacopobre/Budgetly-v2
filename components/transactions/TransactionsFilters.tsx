@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
+import { Check, ChevronDown, Repeat, Search } from 'lucide-react'
 import type { MonthFilter, TypeFilter } from '@/types/transactions'
 import type { Dispatch, SetStateAction } from 'react'
 
@@ -58,93 +59,88 @@ export function TransactionsFilters({
   }, [isMonthMenuOpen, isFilterTypeMenuOpen, setIsFilterTypeMenuOpen, setIsMonthMenuOpen])
 
   return (
-    <div className="relative z-20 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-4 shadow-[0_2px_8px_rgba(15,23,42,0.05)] dark:border-white/8 dark:bg-white/6 dark:backdrop-blur-md md:flex-row md:items-center md:gap-3">
-      <div className="relative flex-1">
-        <svg
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-slate-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-          />
-        </svg>
+    <div
+      className="bl-rise relative z-20 flex flex-col gap-2.5 md:flex-row md:items-center"
+      style={{ '--i': 1 } as React.CSSProperties}
+    >
+      <label className="bl-affix bl-affix--icon flex-1">
+        <Search aria-hidden="true" />
         <input
-          type="text"
+          type="search"
           value={searchTerm}
           onChange={e => setSearchTerm(e.currentTarget.value)}
-          placeholder="Search transactions..."
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pr-3 pl-9 text-sm text-slate-800 transition outline-none focus:border-emerald-400 focus:bg-white focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200 dark:placeholder-slate-500 dark:focus:bg-white/12"
+          placeholder="Search transactions"
+          aria-label="Search transactions"
+          className="bl-input bl-input--sm"
         />
-      </div>
-      <div className="relative w-full md:w-44" ref={monthMenuRef}>
-        <button
-          type="button"
-          onClick={() => setIsMonthMenuOpen(prev => !prev)}
-          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/8 dark:text-slate-300 dark:hover:bg-white/12"
-        >
-          {filterMonth}
-          <span className="text-slate-400 dark:text-slate-500">▾</span>
-        </button>
-        {isMonthMenuOpen && (
-          <div className="absolute top-full right-0 left-0 z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)] dark:border-white/10 dark:bg-[#0d2418]">
-            {monthOptions.map(option => (
-              <button
-                key={option}
-                type="button"
-                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-white/8 ${
-                  option === filterMonth ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'
-                }`}
-                onClick={() => { setFilterMonth(option); setIsMonthMenuOpen(false) }}
-              >
-                {option}
-                {option === filterMonth && <span className="text-emerald-500">✓</span>}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="relative w-full md:w-36" ref={filterTypeMenuRef}>
-        <button
-          type="button"
-          onClick={() => setIsFilterTypeMenuOpen(prev => !prev)}
-          className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-white dark:border-white/10 dark:bg-white/8 dark:text-slate-300 dark:hover:bg-white/12"
-        >
-          {filterType}
-          <span className="text-slate-400 dark:text-slate-500">▾</span>
-        </button>
-        {isFilterTypeMenuOpen && (
-          <div className="absolute top-full right-0 left-0 z-20 mt-1 w-full overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.1)] dark:border-white/10 dark:bg-[#0d2418]">
-            {typeOptions.map(option => (
-              <button
-                key={option}
-                type="button"
-                className={`flex w-full items-center justify-between px-3 py-2.5 text-left text-sm transition hover:bg-slate-50 dark:hover:bg-white/8 ${
-                  option === filterType ? 'font-semibold text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'
-                }`}
-                onClick={() => { setFilterType(option); setIsFilterTypeMenuOpen(false) }}
-              >
-                {option}
-                {option === filterType && <span className="text-emerald-500">✓</span>}
-              </button>
-            ))}
-          </div>
-        )}
+      </label>
+      <div className="grid grid-cols-2 gap-2.5 md:flex">
+        <div className="relative md:w-40" ref={monthMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsMonthMenuOpen(prev => !prev)}
+            className="bl-input bl-input--sm"
+            aria-haspopup="listbox"
+            aria-expanded={isMonthMenuOpen}
+          >
+            {filterMonth}
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {isMonthMenuOpen && (
+            <div className="bl-menu top-full left-0 mt-1.5" role="listbox">
+              {monthOptions.map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  role="option"
+                  aria-selected={option === filterMonth}
+                  className="bl-menu__item"
+                  onClick={() => { setFilterMonth(option); setIsMonthMenuOpen(false) }}
+                >
+                  {option}
+                  {option === filterMonth && <Check aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <div className="relative md:w-36" ref={filterTypeMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsFilterTypeMenuOpen(prev => !prev)}
+            className="bl-input bl-input--sm"
+            aria-haspopup="listbox"
+            aria-expanded={isFilterTypeMenuOpen}
+          >
+            {filterType}
+            <ChevronDown aria-hidden="true" />
+          </button>
+          {isFilterTypeMenuOpen && (
+            <div className="bl-menu top-full left-0 mt-1.5" role="listbox">
+              {typeOptions.map(option => (
+                <button
+                  key={option}
+                  type="button"
+                  role="option"
+                  aria-selected={option === filterType}
+                  className="bl-menu__item"
+                  onClick={() => { setFilterType(option); setIsFilterTypeMenuOpen(false) }}
+                >
+                  {option}
+                  {option === filterType && <Check aria-hidden="true" />}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <button
         type="button"
+        aria-pressed={filterRecurring}
         onClick={() => setFilterRecurring(!filterRecurring)}
-        className={`flex w-full shrink-0 items-center gap-2 rounded-xl border px-3 py-2 text-sm font-medium transition md:w-auto ${
-          filterRecurring
-            ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:border-emerald-500/50 dark:bg-emerald-500/15 dark:text-emerald-400'
-            : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-white dark:border-white/10 dark:bg-white/8 dark:text-slate-300 dark:hover:bg-white/12'
-        }`}
+        className="bl-btn bl-btn--sm bl-btn--outline shrink-0"
       >
-        <span>↻</span>
+        <Repeat aria-hidden="true" />
         Recurring
       </button>
     </div>

@@ -1,7 +1,8 @@
 'use client'
 
-import { X } from 'lucide-react'
+import { Plus, X } from 'lucide-react'
 import type { Budget } from '@/types/budgets'
+import { DEFAULT_CURRENCY, formatCurrency } from '@/lib/currency'
 
 type Props = {
   isOpen: boolean
@@ -17,8 +18,6 @@ type Props = {
   setIsFundNoteOpen: (v: boolean) => void
   error?: string | null
 }
-
-const formatMoney = (value: number) => `$${value.toFixed(2)}`
 
 export function FundModal({
   isOpen,
@@ -37,112 +36,100 @@ export function FundModal({
   if (!isOpen) return null
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
-      onClick={onClose}
-    >
+    <div className="bl-scrim" onClick={onClose}>
       <div
-        className="flex w-full max-w-lg flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-white/10 dark:bg-[#0e2318]"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="fund-modal-title"
+        className="bl-modal max-w-[440px]"
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex items-start justify-between gap-3">
+        <div className="bl-modal__head">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              {fundMode === 'ADD' ? 'Add Funds' : 'Withdraw Funds'}
+            <h2 id="fund-modal-title" className="bl-modal__title">
+              {fundMode === 'ADD' ? 'Add funds' : 'Withdraw funds'}
             </h2>
             {activeBudget && (
-              <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">
-                Current balance:{' '}
-                <span className="font-medium text-gray-700 dark:text-slate-300">
-                  {formatMoney(activeBudget.balance)}
-                </span>
+              <p className="bl-modal__sub">
+                {activeBudget.name} ·{' '}
+                <span className="font-medium text-ink tabular-nums">
+                  {formatCurrency(activeBudget.balance)}
+                </span>{' '}
+                {fundMode === 'WITHDRAW' ? 'available' : 'now'}
               </p>
             )}
           </div>
-          <button
-            type="button"
-            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-600 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-300"
-            onClick={onClose}
-          >
-            <X className="size-4" />
+          <button type="button" className="bl-icon-btn" onClick={onClose} aria-label="Close modal">
+            <X aria-hidden="true" />
           </button>
         </div>
 
         <div className="flex flex-col gap-4">
-          <label className="flex flex-col text-sm font-medium text-gray-700 dark:text-slate-300" htmlFor="fund">
-            {fundMode === 'ADD' ? 'Amount to add:' : 'Amount to withdraw:'}
-            {fundMode === 'WITHDRAW' && activeBudget && (
-              <span className="mb-2 text-xs text-gray-400 dark:text-slate-500">
-                Max available: {formatMoney(activeBudget.balance)}
-              </span>
-            )}
-            <input
-              id="fund"
-              type="number"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200"
-              placeholder="e.g. 100"
-              value={fundAmount}
-              onChange={e => setFundAmount(e.currentTarget.value)}
-            />
+          <label className="bl-field" htmlFor="fund">
+            {fundMode === 'ADD' ? 'Amount to add' : 'Amount to withdraw'}
+            <span className="bl-affix">
+              <span aria-hidden="true">{DEFAULT_CURRENCY.symbol}</span>
+              <input
+                id="fund"
+                type="number"
+                inputMode="decimal"
+                className="bl-input"
+                placeholder="0.00"
+                value={fundAmount}
+                onChange={e => setFundAmount(e.currentTarget.value)}
+              />
+            </span>
           </label>
 
-          <div className="flex gap-3">
-            {isFundNoteOpen ? (
-              <button
-                type="button"
-                className="cursor-pointer rounded-xl px-4 py-2 text-sm text-gray-400 transition hover:bg-gray-200 hover:text-gray-500 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-400"
-                onClick={() => {
-                  setIsFundNoteOpen(false)
-                  setFundNote('')
-                }}
-              >
-                <X className="size-4" />
-              </button>
-            ) : (
-              <button
-                type="button"
-                className="cursor-pointer rounded-xl px-4 py-2 text-sm text-gray-400 transition hover:bg-gray-200 hover:text-gray-500 dark:text-slate-500 dark:hover:bg-white/10 dark:hover:text-slate-400"
-                onClick={() => setIsFundNoteOpen(true)}
-              >
-                + add note
-              </button>
-            )}
-            {isFundNoteOpen && (
-              <label className="flex flex-col gap-2 text-sm font-medium text-gray-700 dark:text-slate-300" htmlFor="note">
-                <input
-                  id="note"
-                  type="text"
-                  className="rounded-xl border border-gray-200 px-3 py-2 text-gray-800 shadow-sm transition outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 dark:border-white/10 dark:bg-white/8 dark:text-slate-200"
-                  placeholder="e.g. rent"
-                  value={fundNote}
-                  onChange={e => setFundNote(e.currentTarget.value)}
-                />
-              </label>
-            )}
-          </div>
+          {isFundNoteOpen ? (
+            <label className="bl-field" htmlFor="note">
+              <span className="flex items-center justify-between">
+                Note
+                <button
+                  type="button"
+                  className="bl-link text-ink-muted"
+                  onClick={() => {
+                    setIsFundNoteOpen(false)
+                    setFundNote('')
+                  }}
+                >
+                  Remove
+                </button>
+              </span>
+              <input
+                id="note"
+                type="text"
+                className="bl-input"
+                placeholder="e.g. rent"
+                value={fundNote}
+                onChange={e => setFundNote(e.currentTarget.value)}
+              />
+            </label>
+          ) : (
+            <button
+              type="button"
+              className="bl-btn bl-btn--xs bl-btn--quiet -ml-2.5 self-start"
+              onClick={() => setIsFundNoteOpen(true)}
+            >
+              <Plus aria-hidden="true" />
+              Add a note
+            </button>
+          )}
 
           {error && (
-            <p className="rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-400">
+            <p className="bl-alert bl-alert--neg" role="alert">
               {error}
             </p>
           )}
+        </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-end sm:gap-2">
-            <button
-              type="button"
-              className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_4px_12px_rgba(16,185,129,0.3)] transition hover:from-emerald-600 hover:to-teal-600"
-              onClick={onConfirm}
-            >
-              Save
-            </button>
-            <button
-              type="button"
-              className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100 dark:border-white/10 dark:text-slate-300 dark:hover:bg-white/10"
-              onClick={onClose}
-            >
-              Cancel
-            </button>
-          </div>
+        <div className="bl-modal__foot">
+          <button type="button" className="bl-btn bl-btn--sm bl-btn--ghost" onClick={onClose}>
+            Cancel
+          </button>
+          <button type="button" className="bl-btn bl-btn--sm bl-btn--primary" onClick={onConfirm}>
+            {fundMode === 'ADD' ? 'Add funds' : 'Withdraw'}
+          </button>
         </div>
       </div>
     </div>
